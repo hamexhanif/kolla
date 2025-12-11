@@ -1,4 +1,9 @@
 package team5.prototype.repository;
 
-public class UserRepository {
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import team5.prototype.entity.User;
+
+@Repository
+public interface UserRepository extends JpaRepository<User, Long> {
 }
