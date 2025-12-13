@@ -1,6 +1,6 @@
 package team5.prototype.service;
 
-import team5.prototype.entity.Task; // Stellen Sie sicher, dass der Import korrekt ist
+import team5.prototype.entity.Task;
 
 public interface TaskService {
 
