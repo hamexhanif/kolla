@@ -5,12 +5,12 @@ import team5.prototype.entity.Priority;
 import team5.prototype.entity.Task;
 
 @Service
-public class PriorityServiceImpl implements PriorityService {
+public class PrioritizationServiceImpl implements PrioritizationService {
 
     @Override
     public Priority calculatePriority(Task task) {
         // TODO: Die Berechnungslogik aus der Projektbeschreibung hier implementieren
-        System.out.println("Berechne Priorität für Task " + task.getId());
+        System.out.println("LOG: Berechne Priorität für Task " + task.getId());
         return Priority.MEDIUM_TERM; // Vorerst nur ein fester Wert
     }
 }
