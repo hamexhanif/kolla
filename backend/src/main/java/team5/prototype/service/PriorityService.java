@@ -3,7 +3,7 @@ package team5.prototype.service;
 import team5.prototype.entity.Priority;
 import team5.prototype.entity.Task;
 
-public interface PrioritizationService {
+public interface PriorityService {
 
     /**
      * Berechnet die Priorität für eine gegebene Aufgabe.

@@ -11,15 +11,15 @@ public class TaskServiceImpl implements TaskService {
     // Abhängigkeiten, die wir später benötigen werden
     private final TaskRepository taskRepository;
     private final WorkflowDefinitionRepository definitionRepository;
-    private final PrioritizationService prioritizationService;
+    private final PriorityService priorityService;
 
     // Konstruktor-Injection: Spring wird uns automatisch die benötigten Beans geben
     public TaskServiceImpl(TaskRepository taskRepository,
                            WorkflowDefinitionRepository definitionRepository,
-                           PrioritizationService prioritizationService) {
+                           PriorityService priorityService) {
         this.taskRepository = taskRepository;
         this.definitionRepository = definitionRepository;
-        this.prioritizationService = prioritizationService;
+        this.priorityService = priorityService;
     }
 
     @Override

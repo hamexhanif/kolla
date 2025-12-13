@@ -5,7 +5,7 @@ import team5.prototype.entity.Priority;
 import team5.prototype.entity.Task;
 
 @Service
-public class PrioritizationServiceImpl implements PrioritizationService {
+public class PriorityServiceImpl implements PriorityService {
 
     @Override
     public Priority calculatePriority(Task task) {
