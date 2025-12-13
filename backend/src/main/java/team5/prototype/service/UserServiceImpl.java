@@ -1,29 +1,79 @@
 package team5.prototype.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
-import team5.prototype.entity.Task;
+import org.springframework.transaction.annotation.Transactional;
+import team5.prototype.entity.Priority;
+import team5.prototype.entity.TaskStep;
+import team5.prototype.entity.TaskStepStatus;
+import team5.prototype.repository.TaskStepRepository;
 import team5.prototype.repository.UserRepository;
-import team5.prototype.repository.TaskRepository; // Sie werden dies wahrscheinlich auch benötigen
 
-import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class UserServiceImpl implements UserService {
 
-    private final UserRepository userRepository;
-    private final TaskRepository taskRepository;
+    private static final Map<Priority, Integer> PRIORITY_RANKING = buildPriorityRanking();
 
-    public UserServiceImpl(UserRepository userRepository, TaskRepository taskRepository) {
+    private final UserRepository userRepository;
+    private final TaskStepRepository taskStepRepository;
+
+    public UserServiceImpl(UserRepository userRepository,
+                           TaskStepRepository taskStepRepository) {
         this.userRepository = userRepository;
-        this.taskRepository = taskRepository;
+        this.taskStepRepository = taskStepRepository;
     }
 
     @Override
-    public List<Task> getTasksForUser(String userId) {
-        // TODO: Später die Logik implementieren, um die Tasks eines Benutzers
-        // aus dem TaskRepository zu laden (z.B. über eine benutzerdefinierte Abfrage).
-        System.out.println("Rufe Tasks für Benutzer " + userId + " ab.");
-        return Collections.emptyList(); // Gibt vorerst eine leere Liste zurück
+    @Transactional(readOnly = true)
+    public List<TaskStep> getActiveStepsForUser(Long userId) {
+        assertUserExists(userId);
+        List<TaskStep> steps = taskStepRepository.findByAssignedUserIdAndStatusNot(userId, TaskStepStatus.COMPLETED);
+        return steps.stream()
+                .filter(step -> step.getStatus() != TaskStepStatus.WAITING)
+                .sorted(stepComparator())
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public TaskStep overrideManualPriority(Long taskStepId, Integer manualPriority) {
+        TaskStep step = taskStepRepository.findById(taskStepId)
+                .orElseThrow(() -> new EntityNotFoundException("TaskStep %d nicht gefunden".formatted(taskStepId)));
+        step.setManualPriority(manualPriority);
+        return taskStepRepository.save(step);
+    }
+
+    private Comparator<TaskStep> stepComparator() {
+        return Comparator
+                .comparingInt(UserServiceImpl::manualPriorityValue)
+                .thenComparing(step -> PRIORITY_RANKING.getOrDefault(step.getPriority(), Integer.MAX_VALUE))
+                .thenComparing(TaskStep::getAssignedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(step -> step.getWorkflowStep().getSequenceOrder());
+    }
+
+    private static int manualPriorityValue(TaskStep step) {
+        Integer manual = step.getManualPriority();
+        return manual == null ? Integer.MAX_VALUE : manual;
+    }
+
+    private void assertUserExists(Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("UserId darf nicht null sein.");
+        }
+        userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User %d nicht gefunden".formatted(userId)));
+    }
+
+    private static Map<Priority, Integer> buildPriorityRanking() {
+        Map<Priority, Integer> ranking = new EnumMap<>(Priority.class);
+        ranking.put(Priority.IMMEDIATE, 0);
+        ranking.put(Priority.MEDIUM_TERM, 1);
+        ranking.put(Priority.LONG_TERM, 2);
+        return ranking;
     }
 }

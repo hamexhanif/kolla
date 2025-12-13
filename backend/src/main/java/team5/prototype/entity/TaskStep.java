@@ -32,7 +32,7 @@ public class TaskStep {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private TaskStepStatus status = TaskStepStatus.ASSIGNED;
+    private TaskStepStatus status = TaskStepStatus.WAITING;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -41,7 +41,7 @@ public class TaskStep {
     @Column(name = "manual_priority")
     private Integer manualPriority;
 
-    @Column(name = "assigned_at", nullable = false)
+    @Column(name = "assigned_at")
     private LocalDateTime assignedAt;
 
     @Column(name = "started_at")
@@ -55,7 +55,7 @@ public class TaskStep {
 
     @PrePersist
     protected void onCreate() {
-        if (assignedAt == null) {
+        if (assignedAt == null && status != TaskStepStatus.WAITING) {
             assignedAt = LocalDateTime.now();
         }
     }

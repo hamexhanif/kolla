@@ -8,4 +8,5 @@ public interface AuthService {
      * @return Ein String, der den JWT-Token repräsentiert.
      */
     String login(String username, String password);
+
 }
