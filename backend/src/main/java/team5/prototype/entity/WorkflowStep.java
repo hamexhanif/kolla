@@ -17,31 +17,18 @@ public class WorkflowStep {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String name;
+    @Enumerated(EnumType.STRING)
+    private TaskStatus status;
 
-    @Column(length = 1000)
-    private String description;
+    @ManyToOne
+    @JoinColumn(name = "assigned_user_id")
+    private User assignedUser;
 
-    @Column(name = "duration_hours", nullable = false)
-    private Integer durationHours;
+    @ManyToOne
+    @JoinColumn(name = "task_id")
+    private Task task;
 
-    @Column(name = "sequence_order", nullable = false)
-    private Integer sequenceOrder;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "workflow_definition_id", nullable = false)
-    private WorkflowDefinition workflowDefinition;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "required_role_id", nullable = false)
-    private Role requiredRole;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    @ManyToOne
+    @JoinColumn(name = "step_definition_id", nullable = false)
+    private WorkflowStepDefinition workflowStepDefinition;
 }

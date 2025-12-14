@@ -3,6 +3,7 @@ package team5.prototype.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,45 +23,15 @@ public class Task {
     @Column(nullable = false)
     private String title;
 
-    @Column(length = 2000)
-    private String description;
+    private ZonedDateTime deadline;
 
-    @Column(nullable = false)
-    private LocalDateTime deadline;
+    @Transient // Wird nicht in der DB gespeichert, nur zur Laufzeit berechnet
+    private Priority overriddenPriority;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private TaskStatus status = TaskStatus.NOT_STARTED;
-
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "workflow_definition_id", nullable = false)
     private WorkflowDefinition workflowDefinition;
 
-    @Column(name = "current_step_index", nullable = false)
-    @Builder.Default
-    private Integer currentStepIndex = 0;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tenant_id", nullable = false)
-    private Tenant tenant;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by")
-    private User createdBy;
-
-    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<TaskStep> taskSteps = new ArrayList<>();
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "completed_at")
-    private LocalDateTime completedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL)
+    private List<WorkflowStep> steps;
 }
