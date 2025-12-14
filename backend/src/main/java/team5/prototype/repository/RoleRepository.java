@@ -6,4 +6,5 @@ import team5.prototype.entity.Role;
 
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Long> {
+    // Vorerst leer.
 }
