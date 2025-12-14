@@ -3,21 +3,16 @@ package team5.prototype.task;
 import org.springframework.stereotype.Service;
 import team5.prototype.workflow.definition.WorkflowDefinitionRepository;
 
-@Service // Wichtig: Sagt Spring, dass dies eine Service-Klasse ist
+@Service
 public class TaskServiceImpl implements TaskService {
 
-    // Abhängigkeiten, die wir später benötigen werden
     private final TaskRepository taskRepository;
     private final WorkflowDefinitionRepository definitionRepository;
-//    private final PriorityService priorityService;
 
-    // Konstruktor-Injection: Spring wird uns automatisch die benötigten Beans geben
     public TaskServiceImpl(TaskRepository taskRepository,
-                           WorkflowDefinitionRepository definitionRepository
-                           /**PriorityService priorityService**/) {
+                           WorkflowDefinitionRepository definitionRepository) {
         this.taskRepository = taskRepository;
         this.definitionRepository = definitionRepository;
-//        this.priorityService = priorityService;
     }
 
     @Override
@@ -27,9 +22,9 @@ public class TaskServiceImpl implements TaskService {
         return null; // Vorerst nur ein Platzhalter
     }
 
-    @Override
-    public void completeStep(Long taskId, Long stepId, String userId) {
-        // TODO: Logik hier später implementieren
-        System.out.println("Schließe Schritt " + stepId + " für Task " + taskId + " ab");
-    }
+//    @Override
+//    public void completeStep(Long taskId, Long stepId, String userId) {
+//        // TODO: Logik hier später implementieren
+//        System.out.println("Schließe Schritt " + stepId + " für Task " + taskId + " ab");
+//    }
 }

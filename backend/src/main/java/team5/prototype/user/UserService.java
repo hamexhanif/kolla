@@ -4,5 +4,5 @@ import team5.prototype.task.Task;
 import java.util.List;
 
 public interface UserService {
-    // TODO: createUser, getUser, updateUser, deleteUser function
+    // TODO: write method header for createUser, getUser, deleteUser function
 }

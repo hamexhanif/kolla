@@ -11,5 +11,5 @@ public class UserServiceImpl implements UserService {
         this.userRepository = userRepository;
     }
 
-    // TODO: implement createUser, getUser, updateUser, deleteUser function
+    // TODO: implement createUser, getUser, deleteUser function
 }

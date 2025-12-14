@@ -10,11 +10,14 @@ public interface TaskService {
      */
     Task createTaskFromDefinition(Long definitionId, String title);
 
-    /**
-     * Schließt einen Arbeitsschritt ab und bewegt den Workflow vorwärts.
-     * @param taskId Die ID der übergeordneten Aufgabe.
-     * @param stepId Die ID des abzuschließenden Arbeitsschritts.
-     * @param userId Die ID des Benutzers, der die Aktion ausführt.
-     */
-    void completeStep(Long taskId, Long stepId, String userId);
+//    /**
+//     * Schließt einen Arbeitsschritt ab und bewegt den Workflow vorwärts.
+//     * @param taskId Die ID der übergeordneten Aufgabe.
+//     * @param stepId Die ID des abzuschließenden Arbeitsschritts.
+//     * @param userId Die ID des Benutzers, der die Aktion ausführt.
+//     */
+//    void completeStep(Long taskId, Long stepId, String userId);
+
+//    the method/function above belongs to the TaskStepService
+
 }
