@@ -1,47 +1,31 @@
 package team5.prototype.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
-import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "workflow_steps")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class WorkflowStep {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String name;
+    @Enumerated(EnumType.STRING)
+    private TaskStatus status;
 
-    @Column(length = 1000)
-    private String description;
+    @ManyToOne
+    @JoinColumn(name = "assigned_user_id")
+    private User assignedUser;
 
-    @Column(name = "duration_hours", nullable = false)
-    private Integer durationHours;
+    @ManyToOne
+    @JoinColumn(name = "task_id", nullable = false)
+    private Task task;
 
-    @Column(name = "sequence_order", nullable = false)
-    private Integer sequenceOrder;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "workflow_definition_id", nullable = false)
-    private WorkflowDefinition workflowDefinition;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "required_role_id", nullable = false)
-    private Role requiredRole;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    @ManyToOne
+    @JoinColumn(name = "step_definition_id", nullable = false)
+    private WorkflowDefinition workflowStepDefinition;
 }
