@@ -4,5 +4,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class TaskStepServiceImpl implements TaskStepService{
-    // TODO: implement assignTaskStepToUser, calculatePriority, overridePriority, getTaskStepsByUserId
+    // TODO: implement assignTaskStepToUser, calculatePriority,
+    //       overridePriority, getTaskStepsByUserId, completeTaskStep
 }
