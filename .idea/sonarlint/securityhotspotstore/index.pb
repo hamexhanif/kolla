@@ -25,3 +25,13 @@ g
 7src/main/java/team5/prototype/user/UserServiceImpl.java,f\4\f459338ae4ba99b6593bb63a541c46b1d9d0834f
 c
 3src/main/java/team5/prototype/user/UserService.java,a\a\aada12d7777695d926d73069abf98e85229ea9b6
+\
+,src/main/java/team5/prototype/role/Role.java,d\c\dc1457ee958d960d7a7bf93b0a0c3feae1999807
+7
+pom.xml,4\4\442292b8a7efeabbe4cc176709b833b1792140ec
+c
+3src/main/java/team5/prototype/role/RoleService.java,d\5\d533e9c8f0c85eb9c1dc1837ccaa227b2cfcbd7b
+g
+7src/main/java/team5/prototype/role/RoleServiceImpl.java,5\7\570ceffcc584532691060416c7462326a27a3a5e
+f
+6src/main/java/team5/prototype/role/RoleRepository.java,0\a\0a913da6b2878d7e15894d2d54a02e660f432a2d
