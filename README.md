@@ -2,7 +2,7 @@
 
 ## Service Layer & API
 
-- Maven auf Spring Boot 3.2.0 und gültige Starter (Data JPA, Web, Actuator, Starter-Test) umgestellt, damit die neuen Unit-Tests gebaut werden können.
+- Maven auf Spring Boot 4.0.0 und gültige Starter (Data JPA, Web, Actuator, Starter-Test) umgestellt, damit die neuen Unit-Tests gebaut werden können.
 - Neues `TimeConfig` liefert eine gemeinsame `Clock`, um Priorisierungen deterministisch berechnen zu können.
 - `TaskService` erhielt einen `TaskCreationRequest`, eine Fortschrittsabfrage (`TaskProgress`) sowie eine überarbeitete Signatur für `completeStep` (User-IDs als `Long`). So können Deadlines, Ersteller und optionale Step-Zuweisungen sauber verarbeitet werden.
 - `TaskStepStatus` besitzt jetzt den Zustand `WAITING`, damit Schritte erst nach Abschluss des Vorgängers in die Benutzerliste wandern. `TaskStep.assignedAt` darf für wartende Schritte leer bleiben.
