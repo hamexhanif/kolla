@@ -4,20 +4,23 @@ public interface TaskService {
 
     /**
      * Erstellt eine neue Task basierend auf einer WorkflowDefinition.
-     * @param definitionId Die ID der Vorlage.
-     * @param title Der Titel für die neue, konkrete Aufgabe.
+     *
+     * @param request vollständige Beschreibung für die Instanziierung.
      * @return Die neu erstellte Task.
      */
-    Task createTaskFromDefinition(Long definitionId, String title);
+    Task createTaskFromDefinition(TaskCreationRequest request);
 
-//    /**
-//     * Schließt einen Arbeitsschritt ab und bewegt den Workflow vorwärts.
-//     * @param taskId Die ID der übergeordneten Aufgabe.
-//     * @param stepId Die ID des abzuschließenden Arbeitsschritts.
-//     * @param userId Die ID des Benutzers, der die Aktion ausführt.
-//     */
-//    void completeStep(Long taskId, Long stepId, String userId);
+    /**
+     * Schließt einen Arbeitsschritt ab und bewegt den Workflow vorwärts.
+     *
+     * @param taskId Die ID der übergeordneten Aufgabe.
+     * @param stepId Die ID des abzuschließenden Arbeitsschritts.
+     * @param userId Die ID des Benutzers, der die Aktion ausführt.
+     */
+    void completeStep(Long taskId, Long stepId, Long userId);
 
-//    the method/function above belongs to the TaskStepService
-
+    /**
+     * Liefert eine kompakte Fortschrittsübersicht für den Workflowmanager.
+     */
+    TaskProgress getTaskProgress(Long taskId);
 }
