@@ -14,10 +14,6 @@ public class PriorityServiceImpl implements PriorityService {
 
     @Override
     public Priority calculatePriority(Task task) {
-        if (task == null || task.getDeadline() == null) {
-            return Priority.MEDIUM_TERM;
-        }
-
         LocalDateTime now = LocalDateTime.now();
         long hoursUntilDeadline = Duration.between(now, task.getDeadline()).toHours();
         if (hoursUntilDeadline <= 0) {
