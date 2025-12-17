@@ -22,7 +22,7 @@ public class TaskServiceImpl implements TaskService {
     private final TaskRepository taskRepository;
     private final WorkflowDefinitionRepository definitionRepository;
     private final UserRepository userRepository;
-    private final PriorityService priorityService;
+    // private final PriorityService priorityService; // Noch nicht implementiert
 
     public TaskServiceImpl(TaskRepository taskRepository,
                            WorkflowDefinitionRepository definitionRepository,
@@ -31,26 +31,26 @@ public class TaskServiceImpl implements TaskService {
         this.taskRepository = taskRepository;
         this.definitionRepository = definitionRepository;
         this.userRepository = userRepository;
-        this.priorityService = priorityService;
+        // this.priorityService = priorityService;
     }
 
     @Override
     @Transactional
-    public Task createTaskFromDefinition(TaskCreationRequest request) {
-        WorkflowDefinition definition = definitionRepository.findById(request.workflowDefinitionId())
+    public Task createTaskFromDefinition(TaskDto request) { // PARAMETER GEÄNDERT
+        WorkflowDefinition definition = definitionRepository.findById(request.getWorkflowDefinitionId()) // ANPASSUNG
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "WorkflowDefinition %d nicht gefunden".formatted(request.workflowDefinitionId())));
+                        "WorkflowDefinition %d nicht gefunden".formatted(request.getWorkflowDefinitionId()))); // ANPASSUNG
 
         if (definition.getSteps().isEmpty()) {
             throw new IllegalStateException("WorkflowDefinition enthält keine Schritte");
         }
 
-        User creator = findUser(request.creatorUserId());
+        User creator = findUser(request.getCreatorUserId()); // ANPASSUNG
 
         Task task = Task.builder()
-                .title(request.title())
-                .description(request.description())
-                .deadline(request.deadline())
+                .title(request.getTitle()) // ANPASSUNG
+                .description(request.getDescription()) // ANPASSUNG
+                .deadline(request.getDeadline()) // ANPASSUNG
                 .workflowDefinition(definition)
                 .tenant(definition.getTenant())
                 .createdBy(creator)
@@ -64,83 +64,42 @@ public class TaskServiceImpl implements TaskService {
                 .sorted(Comparator.comparingInt(WorkflowStep::getSequenceOrder))
                 .collect(Collectors.toList());
 
-        Map<Long, Long> overrides = request.stepAssignments();
+        Map<Long, Long> overrides = request.getStepAssignments(); // ANPASSUNG
         List<TaskStep> concreteSteps = buildTaskSteps(task, orderedSteps, overrides);
         task.setTaskSteps(concreteSteps);
 
-        refreshPriorityForActiveSteps(task);
+        // refreshPriorityForActiveSteps(task); // Diese Methode ist noch auskommentiert
         return taskRepository.save(task);
     }
 
-    @Override
-    @Transactional
-    public void completeStep(Long taskId, Long stepId, Long userId) {
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new EntityNotFoundException("Task %d nicht gefunden".formatted(taskId)));
-
-        TaskStep step = task.getTaskSteps()
-                .stream()
-                .filter(ts -> Objects.equals(ts.getId(), stepId))
-                .findFirst()
-                .orElseThrow(() -> new EntityNotFoundException("TaskStep %d nicht gefunden".formatted(stepId)));
-
-        if (!Objects.equals(step.getAssignedUser().getId(), userId)) {
-            throw new IllegalArgumentException("Benutzer %d ist nicht dem Arbeitsschritt zugeordnet".formatted(userId));
-        }
-        if (step.getStatus() == TaskStepStatus.COMPLETED) {
-            return;
-        }
-        if (step.getStatus() == TaskStepStatus.WAITING) {
-            throw new IllegalStateException("Arbeitsschritt ist noch nicht aktiv.");
-        }
-
-        step.setStatus(TaskStepStatus.COMPLETED);
-        step.setCompletedAt(now());
-        step.setStartedAt(Optional.ofNullable(step.getStartedAt()).orElse(step.getAssignedAt()));
-
-        moveToNextStep(task, step);
-        refreshPriorityForActiveSteps(task);
-        taskRepository.save(task);
-    }
+    // In TaskServiceImpl.java
 
     @Override
     @Transactional(readOnly = true)
     public TaskProgress getTaskProgress(Long taskId) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new EntityNotFoundException("Task %d nicht gefunden".formatted(taskId)));
+
         int totalSteps = task.getTaskSteps().size();
         int completedSteps = (int) task.getTaskSteps().stream()
                 .filter(step -> step.getStatus() == TaskStepStatus.COMPLETED)
                 .count();
-        return new TaskProgress(task.getId(), task.getTitle(), task.getDeadline(), totalSteps, completedSteps, task.getStatus());
+
+        return new TaskProgress(
+                task.getId(),
+                task.getTitle(),
+                task.getDeadline(),
+                totalSteps,
+                completedSteps,
+                task.getStatus()
+        );
     }
 
-    private void moveToNextStep(Task task, TaskStep completedStep) {
-        List<TaskStep> steps = task.getTaskSteps();
-        int completedIndex = steps.indexOf(completedStep);
-        int nextIndex = completedIndex + 1;
+    // --- Private Hilfsmethoden, die nur für die Task-Erstellung relevant sind ---
 
-        if (nextIndex >= steps.size()) {
-            task.setStatus(TaskStatus.COMPLETED);
-            task.setCompletedAt(now());
-            task.setCurrentStepIndex(nextIndex);
-            return;
-        }
-
-        TaskStep nextStep = steps.get(nextIndex);
-        nextStep.setStatus(TaskStepStatus.ASSIGNED);
-        nextStep.setAssignedAt(now());
-        task.setCurrentStepIndex(nextIndex);
-
-        if (task.getStatus() == TaskStatus.NOT_STARTED) {
-            task.setStatus(TaskStatus.IN_PROGRESS);
-        }
-    }
-
-    private List<TaskStep> buildTaskSteps(Task task,
-                                          List<WorkflowStep> orderedSteps,
-                                          Map<Long, Long> overrides) {
+    private List<TaskStep> buildTaskSteps(Task task, List<WorkflowStep> orderedSteps, Map<Long, Long> overrides) {
         List<TaskStep> steps = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
         for (int index = 0; index < orderedSteps.size(); index++) {
             WorkflowStep workflowStep = orderedSteps.get(index);
             User assignee = resolveAssignee(workflowStep, overrides, task.getTenant().getId());
@@ -149,29 +108,19 @@ public class TaskServiceImpl implements TaskService {
                     .workflowStep(workflowStep)
                     .assignedUser(assignee)
                     .status(index == 0 ? TaskStepStatus.ASSIGNED : TaskStepStatus.WAITING)
-                    .priority(Priority.MEDIUM_TERM);
+                    .priority(Priority.MEDIUM_TERM); // Vorerst fester Wert
             if (index == 0) {
-                builder.assignedAt(now());
+                builder.assignedAt(now);
             }
             steps.add(builder.build());
         }
         return steps;
     }
 
-    private void refreshPriorityForActiveSteps(Task task) {
-        Priority priority = priorityService.calculatePriority(task);
-        task.getTaskSteps().stream()
-                .filter(step -> step.getStatus() == TaskStepStatus.ASSIGNED || step.getStatus() == TaskStepStatus.IN_PROGRESS)
-                .forEach(step -> step.setPriority(priority));
-    }
-
-    private User resolveAssignee(WorkflowStep workflowStep,
-                                 Map<Long, Long> overrides,
-                                 Long tenantId) {
+    private User resolveAssignee(WorkflowStep workflowStep, Map<Long, Long> overrides, Long tenantId) {
         if (overrides != null && overrides.containsKey(workflowStep.getId())) {
             return findUser(overrides.get(workflowStep.getId()));
         }
-
         String roleName = workflowStep.getRequiredRole().getName();
         return userRepository.findFirstByRoles_NameAndTenant_IdOrderByIdAsc(roleName, tenantId)
                 .orElseThrow(() -> new IllegalStateException("Kein Benutzer für Rolle %s gefunden".formatted(roleName)));
@@ -184,5 +133,16 @@ public class TaskServiceImpl implements TaskService {
 
     private LocalDateTime now() {
         return LocalDateTime.now();
+    }
+    @Override
+    public List<Task> getAllTasks() {
+        // TODO: Implementierung später hinzufügen
+        return List.of(); // Gibt eine leere Liste zurück
+    }
+
+    @Override
+    public Optional<Task> getTaskById(Long taskId) {
+        // TODO: Implementierung später hinzufügen
+        return Optional.empty(); // Gibt ein leeres Optional zurück
     }
 }
