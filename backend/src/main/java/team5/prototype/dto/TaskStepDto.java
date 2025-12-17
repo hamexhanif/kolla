@@ -1,7 +1,7 @@
 package team5.prototype.dto;
 
-import team5.prototype.entity.Priority;
-import team5.prototype.entity.TaskStepStatus;
+import team5.prototype.taskstep.Priority;
+import team5.prototype.taskstep.TaskStepStatus;
 
 import java.time.LocalDateTime;
 

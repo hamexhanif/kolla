@@ -1,6 +1,6 @@
 package team5.prototype.dto;
 
-import team5.prototype.entity.TaskStatus;
+import team5.prototype.task.TaskStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;

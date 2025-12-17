@@ -1,10 +1,11 @@
-package team5.prototype.dto;
-
-import team5.prototype.task.TaskStatus;
+package team5.prototype.task;
 
 import java.time.LocalDateTime;
 
-public record TaskProgressDto(
+/**
+ * Lightweight snapshot used by the workflow manager to monitor an individual task.
+ */
+public record TaskProgress(
         Long taskId,
         String title,
         LocalDateTime deadline,
