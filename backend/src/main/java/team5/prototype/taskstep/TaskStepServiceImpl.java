@@ -41,7 +41,19 @@ public class TaskStepServiceImpl implements TaskStepService {
 
         // TODO: Benachrichtigung auslösen und nächsten Schritt im TaskService anstoßen
     }
+    @Override
+    public void completeStep(Long taskStepId, String userId) {
+        TaskStep taskStep = taskStepRepository.findById(taskStepId)
+                .orElseThrow(() -> new RuntimeException("TaskStep mit ID " + taskStepId + " nicht gefunden!"));
 
+        // TODO: Sicherheitscheck, ob der userId der zugewiesene User ist
+
+        taskStep.setStatus(TaskStepStatus.COMPLETED);
+        taskStepRepository.save(taskStep);
+
+        // TODO: Benachrichtigung auslösen
+        // TODO: Den übergeordneten TaskService informieren, dass er den nächsten Schritt planen soll
+    }
     @Override
     public List<TaskStep> getTaskStepsByUserId(Long userId) {
         // TODO: Eine benutzerdefinierte Methode im TaskStepRepository erstellen

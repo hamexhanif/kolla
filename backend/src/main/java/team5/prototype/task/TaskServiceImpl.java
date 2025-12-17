@@ -53,12 +53,6 @@ public class TaskServiceImpl implements TaskService {
         return taskRepository.save(newTask);
     }
 
-    @Override
-    public void completeStep(Long taskId, Long stepId, String userId) {
-        // TODO: Diese Logik muss als nächstes implementiert werden.
-        System.out.println("Schließe Schritt " + stepId + " für Task " + taskId + " ab");
-    }
-
     // Implementierung der CRUD-Methoden
     @Override
     public List<Task> getAllTasks() {

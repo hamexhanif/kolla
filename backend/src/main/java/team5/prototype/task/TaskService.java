@@ -18,7 +18,7 @@ public interface TaskService {
 //     * @param stepId Die ID des abzuschließenden Arbeitsschritts.
 //     * @param userId Die ID des Benutzers, der die Aktion ausführt.
 //     */
-    void completeStep(Long taskId, Long stepId, String userId);
+   // void completeStep(Long taskId, Long stepId, String userId);
     List<Task> getAllTasks();
     Optional<Task> getTaskById(Long taskId);
     void deleteTask(Long taskId);

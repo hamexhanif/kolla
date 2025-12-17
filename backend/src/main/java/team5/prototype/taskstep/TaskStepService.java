@@ -8,6 +8,8 @@ public interface TaskStepService {
 
     void completeTaskStep(Long taskStepId, String userId);
 
+    void completeStep(Long taskStepId, String userId);
+
     List<TaskStep> getTaskStepsByUserId(Long userId);
 
 // TODO: write method header for calculatePriority,
