@@ -1,11 +1,26 @@
 package team5.prototype.taskstep;
 
+import java.util.List;
+
 public interface TaskStepService {
-    // TODO: write method header for assignTaskStepToUser, calculatePriority,
-    //       setManualPriority, getTaskStepsByUserId, completeTaskStep
+
+    /**
+     * Ordnet einen TaskStep einem Benutzer zu und setzt den Status auf ASSIGNED.
+     */
+    TaskStep assignTaskStepToUser(Long taskStepId, Long userId);
 
     /**
      * Setzt eine manuelle Priorität für einen TaskStep und überschreibt damit die berechnete Priorität.
      */
-    void setManualPriority(Long taskStepId, int manualPriority);
+    TaskStep setManualPriority(Long taskStepId, int manualPriority);
+
+    /**
+     * Liefert alle nicht abgeschlossenen TaskSteps eines Nutzers.
+     */
+    List<TaskStep> getActiveTaskStepsByUser(Long userId);
+
+    /**
+     * Schließt einen TaskStep ab (inkl. Fortschritts-Update auf der zugehörigen Task).
+     */
+    void completeTaskStep(Long taskId, Long taskStepId, Long userId);
 }
