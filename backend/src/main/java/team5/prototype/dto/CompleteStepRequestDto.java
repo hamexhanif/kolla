@@ -1,8 +1,11 @@
 package team5.prototype.dto;
 
-import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
 
-public record CompleteStepRequestDto(
-        @NotNull Long userId
-) {
+@Getter
+@Setter
+public class CompleteStepRequestDto {
+
+    private Long userId;
 }

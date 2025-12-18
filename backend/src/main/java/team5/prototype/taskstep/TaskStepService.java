@@ -21,4 +21,5 @@ public interface TaskStepService {
      * Stößt die Neuberechnung der Priorität für die übergeordnete Task an.
      */
     void calculatePriority(Long taskStepId);
+
 }

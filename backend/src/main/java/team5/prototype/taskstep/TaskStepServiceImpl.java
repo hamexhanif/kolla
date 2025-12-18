@@ -47,15 +47,19 @@ public class TaskStepServiceImpl implements TaskStepService {
     @Override
     @Transactional
     public void completeTaskStep(Long taskStepId, Long userId) {
-        TaskStep step = findTaskStepById(taskStepId);
+        // 1. Lade den spezifischen TaskStep, der abgeschlossen werden soll
+        TaskStep step = taskStepRepository.findById(taskStepId)
+                .orElseThrow(() -> new EntityNotFoundException("TaskStep mit ID " + taskStepId + " nicht gefunden."));
 
-        if (!Objects.equals(step.getAssignedUser().getId(), userId)) {
-            throw new IllegalArgumentException("Benutzer ist nicht dem Arbeitsschritt zugeordnet");
+        // 2. Sicherheits-Checks
+        if (step.getAssignedUser() == null || !Objects.equals(step.getAssignedUser().getId(), userId)) {
+            throw new IllegalArgumentException("Benutzer ist nicht dem Arbeitsschritt zugeordnet.");
         }
         if (step.getStatus() == TaskStepStatus.COMPLETED) {
-            return;
+            return; // Nichts zu tun, da bereits erledigt
         }
 
+        // 3. Status des aktuellen Schritts aktualisieren
         step.setStatus(TaskStepStatus.COMPLETED);
         step.setCompletedAt(LocalDateTime.now());
         taskStepRepository.save(step);
@@ -100,6 +104,9 @@ public class TaskStepServiceImpl implements TaskStepService {
             task.setCompletedAt(LocalDateTime.now());
         } else {
             TaskStep nextStep = steps.get(nextIndex);
+
+            // TODO: Logik zur Zuweisung des nächsten Benutzers (resolveAssignee)
+            // nextStep.setAssignedUser(...);
             nextStep.setStatus(TaskStepStatus.ASSIGNED);
             nextStep.setAssignedAt(LocalDateTime.now());
             task.setCurrentStepIndex(nextIndex);

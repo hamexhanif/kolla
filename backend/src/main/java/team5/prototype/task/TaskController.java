@@ -47,7 +47,6 @@ public class TaskController {
         return ResponseEntity.ok(progress);
     }
 
-
     // --- Private Konvertierungs-Hilfsmethoden ---
 
     private TaskDto convertToDto(Task task) {
