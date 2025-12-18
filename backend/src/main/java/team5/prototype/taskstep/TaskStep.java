@@ -9,7 +9,7 @@ import team5.prototype.user.User;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "work_items")
+@Table(name = "task_steps")
 @Getter
 @Setter
 @NoArgsConstructor

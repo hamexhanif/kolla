@@ -12,17 +12,19 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Dies aktiviert einen einfachen, speicherbasierten Message Broker.
-        // Das Präfix "/topic" wird für alle Nachrichten verwendet, die an die Clients gesendet werden.
+        // Aktiviert einen einfachen Message Broker, der Nachrichten an Clients
+        // an Ziele weiterleitet, die mit "/topic" beginnen.
         config.enableSimpleBroker("/topic");
-        // Dies definiert das Präfix für Endpunkte, an die Clients Nachrichten senden können (brauchen wir vorerst nicht).
+
+        // Definiert das Präfix "/app" für Nachrichten, die von Clients
+        // an @MessageMapping-annotierte Methoden im Backend gesendet werden.
         config.setApplicationDestinationPrefixes("/app");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Dies ist der Endpunkt, mit dem sich das Frontend verbinden wird, um die WebSocket-Verbindung aufzubauen.
-        // z.B. ws://localhost:8080/ws
-        registry.addEndpoint("/ws").setAllowedOrigins("*"); // Erlaubt Verbindungen von allen Ursprüngen
+        // Registriert den "/ws" Endpunkt, den Clients für die WebSocket-Verbindung nutzen.
+        // setAllowedOrigins("*") erlaubt Verbindungen von jeder Domain (wichtig für die Entwicklung).
+        registry.addEndpoint("/ws").setAllowedOrigins("*");
     }
 }
