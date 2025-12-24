@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: team5.prototype.KollaBackendApplicationTests
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.316 s -- in team5.prototype.KollaBackendApplicationTests
