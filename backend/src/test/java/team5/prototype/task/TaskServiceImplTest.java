@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import team5.prototype.role.Role;
 import team5.prototype.taskstep.Priority;
+import team5.prototype.taskstep.PriorityService;
 import team5.prototype.taskstep.TaskStep;
 import team5.prototype.taskstep.TaskStepStatus;
 import team5.prototype.tenant.Tenant;
@@ -89,7 +90,7 @@ class TaskServiceImplTest {
         when(userRepository.findById(creator.getId())).thenReturn(Optional.of(creator));
         when(userRepository.findFirstByRoles_NameAndTenant_IdOrderByIdAsc(eq("TEST_ROLE"), eq(definition.getTenant().getId())))
                 .thenReturn(Optional.of(assignee));
-        when(priorityService.calculatePriority(any(Task.class))).thenReturn(Priority.MEDIUM_TERM);
+        when(priorityService.calculatePriority(any(TaskStep.class))).thenReturn(Priority.MEDIUM_TERM);
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Task result = taskService.createTaskFromDefinition(request);
@@ -138,7 +139,7 @@ class TaskServiceImplTest {
         task.setTaskSteps(List.of(s1, s2));
 
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
-        when(priorityService.calculatePriority(any(Task.class))).thenReturn(Priority.MEDIUM_TERM);
+        when(priorityService.calculatePriority(any(TaskStep.class))).thenReturn(Priority.MEDIUM_TERM);
 
         taskService.completeStep(task.getId(), s1.getId(), assignee.getId());
 

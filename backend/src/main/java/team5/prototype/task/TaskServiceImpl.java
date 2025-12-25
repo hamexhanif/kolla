@@ -4,6 +4,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team5.prototype.taskstep.Priority;
+import team5.prototype.taskstep.PriorityService;
 import team5.prototype.taskstep.TaskStep;
 import team5.prototype.taskstep.TaskStepStatus;
 import team5.prototype.user.User;
@@ -68,7 +69,7 @@ public class TaskServiceImpl implements TaskService {
         List<TaskStep> concreteSteps = buildTaskSteps(task, orderedSteps, overrides);
         task.setTaskSteps(concreteSteps);
 
-        refreshPriorityForActiveSteps(task);
+        refreshPriorityForNotCompletedTaskSteps(task);
         return taskRepository.save(task);
     }
 
@@ -99,7 +100,7 @@ public class TaskServiceImpl implements TaskService {
         step.setStartedAt(Optional.ofNullable(step.getStartedAt()).orElse(step.getAssignedAt()));
 
         moveToNextStep(task, step);
-        refreshPriorityForActiveSteps(task);
+        refreshPriorityForNotCompletedTaskSteps(task);
         taskRepository.save(task);
     }
 
@@ -158,11 +159,10 @@ public class TaskServiceImpl implements TaskService {
         return steps;
     }
 
-    private void refreshPriorityForActiveSteps(Task task) {
-        Priority priority = priorityService.calculatePriority(task);
+    private void refreshPriorityForNotCompletedTaskSteps(Task task) {
         task.getTaskSteps().stream()
-                .filter(step -> step.getStatus() == TaskStepStatus.ASSIGNED || step.getStatus() == TaskStepStatus.IN_PROGRESS)
-                .forEach(step -> step.setPriority(priority));
+                .filter(step -> step.getStatus() != TaskStepStatus.COMPLETED)
+                .forEach(step -> step.setPriority(priorityService.calculatePriority(step)));
     }
 
     private User resolveAssignee(WorkflowStep workflowStep,
