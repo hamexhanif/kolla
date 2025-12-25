@@ -12,7 +12,8 @@ public interface TaskStepService {
     TaskStep assignTaskStepToUser(Long taskStepId, Long userId);
 
     /**
-     * Setzt eine manuelle Priorität für einen TaskStep und überschreibt damit die berechnete Priorität.
+     * Setzt eine manuelle Priorität und überschreibt die automatische.
+     * Erfüllt die TODOs 'overridePriority' und 'setManualPriority'.
      */
     TaskStep setManualPriority(Long taskStepId, int manualPriority);
 

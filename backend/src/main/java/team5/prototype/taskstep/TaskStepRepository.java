@@ -9,4 +9,6 @@ import java.util.List;
 public interface TaskStepRepository extends JpaRepository<TaskStep, Long> {
 
     List<TaskStep> findByAssignedUserIdAndStatusNot(Long userId, TaskStepStatus status);
+
+    List<TaskStep> findAllByAssignedUserId(Long userId);
 }

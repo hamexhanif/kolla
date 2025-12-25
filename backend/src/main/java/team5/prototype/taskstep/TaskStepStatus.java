@@ -4,5 +4,5 @@ public enum TaskStepStatus {
     WAITING,
     ASSIGNED,
     IN_PROGRESS,
-    COMPLETED
+    NOT_STARTED, COMPLETED
 }
