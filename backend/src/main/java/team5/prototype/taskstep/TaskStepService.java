@@ -1,5 +1,7 @@
 package team5.prototype.taskstep;
 
+import team5.prototype.dto.ActorDashboardItemDto;
+
 import java.util.List;
 
 public interface TaskStepService {
@@ -18,6 +20,14 @@ public interface TaskStepService {
      * Liefert alle nicht abgeschlossenen TaskSteps eines Nutzers.
      */
     List<TaskStep> getActiveTaskStepsByUser(Long userId);
+
+    /**
+     * Liefert Dashboard-Eintraege fuer einen Nutzer mit optionalen Filtern.
+     */
+    List<ActorDashboardItemDto> getActorDashboardItems(Long userId,
+                                                       TaskStepStatus status,
+                                                       Priority priority,
+                                                       String query);
 
     /**
      * Schließt einen TaskStep ab (inkl. Fortschritts-Update auf der zugehörigen Task).
