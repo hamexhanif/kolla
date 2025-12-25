@@ -8,6 +8,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import team5.prototype.dto.ManagerDashboardDto;
 import team5.prototype.dto.TaskDetailsDto;
 import team5.prototype.role.Role;
 import team5.prototype.taskstep.Priority;
@@ -247,5 +248,62 @@ class TaskServiceImplTest {
         assertThat(details.priority()).isEqualTo(Priority.MEDIUM_TERM);
         assertThat(details.steps()).hasSize(2);
         assertThat(details.steps().get(0).assigneeName()).isEqualTo("Efe N");
+    }
+
+    @Test
+    void getManagerDashboardSummarizesCountsAndRows() {
+        Task openTask = Task.builder()
+                .id(501L)
+                .title("Open")
+                .deadline(LocalDateTime.now().plusDays(1))
+                .status(TaskStatus.IN_PROGRESS)
+                .build();
+        Task overdueTask = Task.builder()
+                .id(502L)
+                .title("Overdue")
+                .deadline(LocalDateTime.now().minusDays(1))
+                .status(TaskStatus.NOT_STARTED)
+                .build();
+        Task completedTask = Task.builder()
+                .id(503L)
+                .title("Done")
+                .deadline(LocalDateTime.now())
+                .status(TaskStatus.COMPLETED)
+                .build();
+
+        TaskStep openStep = TaskStep.builder()
+                .id(1L)
+                .task(openTask)
+                .workflowStep(step1)
+                .status(TaskStepStatus.ASSIGNED)
+                .priority(Priority.MEDIUM_TERM)
+                .build();
+        TaskStep overdueStep = TaskStep.builder()
+                .id(2L)
+                .task(overdueTask)
+                .workflowStep(step1)
+                .status(TaskStepStatus.ASSIGNED)
+                .priority(Priority.IMMEDIATE)
+                .build();
+        TaskStep completedStep = TaskStep.builder()
+                .id(3L)
+                .task(completedTask)
+                .workflowStep(step1)
+                .status(TaskStepStatus.COMPLETED)
+                .priority(Priority.LONG_TERM)
+                .build();
+
+        openTask.setTaskSteps(List.of(openStep));
+        overdueTask.setTaskSteps(List.of(overdueStep));
+        completedTask.setTaskSteps(List.of(completedStep));
+
+        when(taskRepository.findAll()).thenReturn(List.of(openTask, overdueTask, completedTask));
+
+        ManagerDashboardDto dashboard = taskService.getManagerDashboard();
+
+        assertThat(dashboard.openTasks()).isEqualTo(2);
+        assertThat(dashboard.overdueTasks()).isEqualTo(1);
+        assertThat(dashboard.tasks()).hasSize(3);
+        assertThat(dashboard.tasks().get(0).taskId()).isEqualTo(501L);
     }
 }

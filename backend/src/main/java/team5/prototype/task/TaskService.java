@@ -1,5 +1,6 @@
 package team5.prototype.task;
 
+import team5.prototype.dto.ManagerDashboardDto;
 import team5.prototype.dto.TaskDetailsDto;
 
 import java.util.List;
@@ -47,4 +48,9 @@ public interface TaskService {
      * Liefert die Detailansicht einer Task mit Schritten fuer das Akteur-Dashboard.
      */
     TaskDetailsDto getTaskDetails(Long taskId);
+
+    /**
+     * Liefert Kennzahlen und Taskliste fuer das Workflow-Manager-Dashboard.
+     */
+    ManagerDashboardDto getManagerDashboard();
 }

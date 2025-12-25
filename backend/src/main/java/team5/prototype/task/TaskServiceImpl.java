@@ -3,6 +3,8 @@ package team5.prototype.task;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import team5.prototype.dto.ManagerDashboardDto;
+import team5.prototype.dto.ManagerTaskRowDto;
 import team5.prototype.dto.TaskDetailsDto;
 import team5.prototype.dto.TaskDetailsStepDto;
 import team5.prototype.taskstep.Priority;
@@ -15,6 +17,7 @@ import team5.prototype.workflow.definition.WorkflowDefinition;
 import team5.prototype.workflow.definition.WorkflowDefinitionRepository;
 import team5.prototype.workflow.step.WorkflowStep;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -147,6 +150,28 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
+    public ManagerDashboardDto getManagerDashboard() {
+        List<Task> tasks = taskRepository.findAll();
+        LocalDate today = LocalDate.now();
+        long openTasks = tasks.stream()
+                .filter(task -> task.getStatus() != TaskStatus.COMPLETED)
+                .count();
+        long overdueTasks = tasks.stream()
+                .filter(task -> task.getStatus() != TaskStatus.COMPLETED)
+                .filter(task -> task.getDeadline().isBefore(today.atStartOfDay()))
+                .count();
+        long dueTodayTasks = tasks.stream()
+                .filter(task -> task.getStatus() != TaskStatus.COMPLETED)
+                .filter(task -> task.getDeadline().toLocalDate().equals(today))
+                .count();
+        List<ManagerTaskRowDto> rows = tasks.stream()
+                .map(this::toManagerTaskRow)
+                .toList();
+        return new ManagerDashboardDto(openTasks, overdueTasks, dueTodayTasks, rows);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Task> getAllTasks() {
         return taskRepository.findAll();
     }
@@ -233,6 +258,15 @@ public class TaskServiceImpl implements TaskService {
                 .map(TaskStep::getPriority)
                 .findFirst()
                 .orElse(null);
+    }
+
+    private ManagerTaskRowDto toManagerTaskRow(Task task) {
+        int totalSteps = task.getTaskSteps().size();
+        int completedSteps = (int) task.getTaskSteps().stream()
+                .filter(step -> step.getStatus() == TaskStepStatus.COMPLETED)
+                .count();
+        Priority priority = resolveTaskPriority(task);
+        return new ManagerTaskRowDto(task.getId(), task.getTitle(), priority, completedSteps, totalSteps);
     }
 
     private TaskDetailsStepDto toTaskDetailsStep(TaskStep step) {
