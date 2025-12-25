@@ -84,8 +84,13 @@ class TaskServiceImplTest {
 
     @Test
     void createTaskFromDefinition_buildsOrderedStepsAndSetsPriority() {
-        TaskCreationRequest request = new TaskCreationRequest(definition.getId(), "title", "desc",
-                LocalDateTime.now().plusDays(1), creator.getId(), Map.of());
+        TaskDto request = new TaskDto();
+        request.setWorkflowDefinitionId(definition.getId());
+        request.setTitle("title");
+        request.setDescription("desc");
+        request.setDeadline(LocalDateTime.now().plusDays(1));
+        request.setCreatorUserId(creator.getId());
+        request.setStepAssignments(Map.of());
 
         when(definitionRepository.findById(definition.getId())).thenReturn(Optional.of(definition));
         when(userRepository.findById(creator.getId())).thenReturn(Optional.of(creator));
@@ -184,8 +189,13 @@ class TaskServiceImplTest {
 
     @Test
     void createTaskThrowsWhenDefinitionMissing() {
-        TaskCreationRequest request = new TaskCreationRequest(999L, "t", "d",
-                LocalDateTime.now(), creator.getId(), Map.of());
+        TaskDto request = new TaskDto();
+        request.setWorkflowDefinitionId(999L);
+        request.setTitle("t");
+        request.setDescription("d");
+        request.setDeadline(LocalDateTime.now());
+        request.setCreatorUserId(creator.getId());
+        request.setStepAssignments(Map.of());
 
         when(definitionRepository.findById(999L)).thenReturn(Optional.empty());
 

@@ -21,7 +21,7 @@ public class TaskStepController {
                                                  @RequestBody CompleteStepRequestDto request) {
 
         // Ruft die korrekte Methode im Service auf
-        taskStepService.completeTaskStep(stepId, request.getUserId());
+        taskStepService.completeTaskStep(taskId, stepId, request.getUserId());
 
         return ResponseEntity.ok().build();
     }
