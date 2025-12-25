@@ -8,6 +8,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import team5.prototype.dto.TaskDetailsDto;
 import team5.prototype.role.Role;
 import team5.prototype.taskstep.Priority;
 import team5.prototype.taskstep.PriorityService;
@@ -190,5 +191,51 @@ class TaskServiceImplTest {
 
         assertThatThrownBy(() -> taskService.createTaskFromDefinition(request))
                 .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void getTaskDetailsBuildsSummaryAndSteps() {
+        Task task = Task.builder()
+                .id(401L)
+                .title("Task One")
+                .deadline(LocalDateTime.now().plusDays(2))
+                .status(TaskStatus.NOT_STARTED)
+                .build();
+        User namedAssignee = User.builder()
+                .id(33L)
+                .username("efen")
+                .firstName("Efe")
+                .lastName("N")
+                .build();
+        TaskStep s1 = TaskStep.builder()
+                .id(1L)
+                .task(task)
+                .workflowStep(step1)
+                .assignedUser(namedAssignee)
+                .status(TaskStepStatus.ASSIGNED)
+                .assignedAt(LocalDateTime.now())
+                .priority(Priority.MEDIUM_TERM)
+                .build();
+        TaskStep s2 = TaskStep.builder()
+                .id(2L)
+                .task(task)
+                .workflowStep(step2)
+                .assignedUser(assignee)
+                .status(TaskStepStatus.COMPLETED)
+                .assignedAt(LocalDateTime.now())
+                .priority(Priority.LONG_TERM)
+                .build();
+        task.setTaskSteps(List.of(s1, s2));
+
+        when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+
+        TaskDetailsDto details = taskService.getTaskDetails(task.getId());
+
+        assertThat(details.taskId()).isEqualTo(401L);
+        assertThat(details.completedSteps()).isEqualTo(1);
+        assertThat(details.totalSteps()).isEqualTo(2);
+        assertThat(details.priority()).isEqualTo(Priority.MEDIUM_TERM);
+        assertThat(details.steps()).hasSize(2);
+        assertThat(details.steps().get(0).assigneeName()).isEqualTo("Efe N");
     }
 }
