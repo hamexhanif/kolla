@@ -153,9 +153,6 @@ public class TaskServiceImpl implements TaskService {
                 .forEach(step -> step.setPriority(priorityService.calculatePriority(step)));
     }
 
-    private User resolveAssignee(WorkflowStep workflowStep,
-                                 Map<Long, Long> overrides,
-                                 Long tenantId) {
     private User resolveAssignee(WorkflowStep workflowStep, Map<Long, Long> overrides, Long tenantId) {
         if (overrides != null && overrides.containsKey(workflowStep.getId())) {
             return findUser(overrides.get(workflowStep.getId()));
