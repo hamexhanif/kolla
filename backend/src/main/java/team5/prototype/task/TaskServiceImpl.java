@@ -127,6 +127,28 @@ public class TaskServiceImpl implements TaskService {
 
     // --- Private Hilfsmethoden, die nur für die Task-Erstellung relevant sind ---
 
+    private void moveToNextStep(Task task, TaskStep completedStep) {
+        List<TaskStep> steps = task.getTaskSteps();
+        int completedIndex = steps.indexOf(completedStep);
+        int nextIndex = completedIndex + 1;
+
+        if (nextIndex >= steps.size()) {
+            task.setStatus(TaskStatus.COMPLETED);
+            task.setCompletedAt(now());
+            task.setCurrentStepIndex(nextIndex);
+            return;
+        }
+
+        TaskStep nextStep = steps.get(nextIndex);
+        nextStep.setStatus(TaskStepStatus.ASSIGNED);
+        nextStep.setAssignedAt(now());
+        task.setCurrentStepIndex(nextIndex);
+
+        if (task.getStatus() == TaskStatus.NOT_STARTED) {
+            task.setStatus(TaskStatus.IN_PROGRESS);
+        }
+    }
+
     private List<TaskStep> buildTaskSteps(Task task, List<WorkflowStep> orderedSteps, Map<Long, Long> overrides) {
         List<TaskStep> steps = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
