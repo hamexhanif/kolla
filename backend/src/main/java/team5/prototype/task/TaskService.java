@@ -13,6 +13,15 @@ public interface TaskService {
     Task createTaskFromDefinition(TaskDto request);
 
     /**
+     * Schließt einen Arbeitsschritt ab und bewegt den Workflow vorwärts.
+     *
+     * @param taskId Die ID der übergeordneten Aufgabe.
+     * @param stepId Die ID des abzuschließenden Arbeitsschritts.
+     * @param userId Die ID des Benutzers, der die Aktion ausführt.
+     */
+    void completeStep(Long taskId, Long stepId, Long userId);
+
+    /**
      * Ruft den aktuellen Fortschritt einer Task ab.
      * @param taskId Die ID der abzufragenden Task.
      * @return Ein DTO, das die Fortschrittsinformationen zusammenfasst.
