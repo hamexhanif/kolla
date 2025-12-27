@@ -23,7 +23,7 @@ public class TaskServiceImpl implements TaskService {
     private final TaskRepository taskRepository;
     private final WorkflowDefinitionRepository definitionRepository;
     private final UserRepository userRepository;
-    // private final PriorityService priorityService; // Noch nicht implementiert
+    private final PriorityService priorityService;
 
     public TaskServiceImpl(TaskRepository taskRepository,
                            WorkflowDefinitionRepository definitionRepository,
@@ -32,7 +32,7 @@ public class TaskServiceImpl implements TaskService {
         this.taskRepository = taskRepository;
         this.definitionRepository = definitionRepository;
         this.userRepository = userRepository;
-        // this.priorityService = priorityService;
+        this.priorityService = priorityService;
     }
 
     @Override
