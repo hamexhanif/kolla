@@ -3,127 +3,127 @@ package team5.prototype.taskstep;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import team5.prototype.notification.NotificationService;
-import team5.prototype.task.Task;
-import team5.prototype.task.TaskRepository;
-import team5.prototype.task.TaskStatus;
+import team5.prototype.dto.ActorDashboardItemDto;
+import team5.prototype.task.TaskService;
 import team5.prototype.user.User;
 import team5.prototype.user.UserRepository;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.Locale;
+import java.util.stream.Stream;
 
 @Service
 public class TaskStepServiceImpl implements TaskStepService {
 
     private final TaskStepRepository taskStepRepository;
     private final UserRepository userRepository;
-    private final TaskRepository taskRepository;
-    private final NotificationService notificationService;
+    private final TaskService taskService;
 
     public TaskStepServiceImpl(TaskStepRepository taskStepRepository,
                                UserRepository userRepository,
-                               TaskRepository taskRepository,
-                               NotificationService notificationService) {
+                               TaskService taskService) {
         this.taskStepRepository = taskStepRepository;
         this.userRepository = userRepository;
-        this.taskRepository = taskRepository;
-        this.notificationService = notificationService;
+        this.taskService = taskService;
     }
 
     @Override
     @Transactional
-    public void assignTaskStepToUser(Long taskStepId, Long userId) {
-        TaskStep step = findTaskStepById(taskStepId);
-        User user = findUserById(userId);
+    public TaskStep assignTaskStepToUser(Long taskStepId, Long userId) {
+        TaskStep step = findTaskStep(taskStepId);
+        User user = findUser(userId);
         step.setAssignedUser(user);
-        step.setAssignedAt(LocalDateTime.now());
-        taskStepRepository.save(step);
+        step.setStatus(TaskStepStatus.ASSIGNED);
+        if (step.getAssignedAt() == null) {
+            step.setAssignedAt(LocalDateTime.now());
+        }
+        return taskStepRepository.save(step);
     }
 
     @Override
     @Transactional
-    public void completeTaskStep(Long taskStepId, Long userId) {
-        // 1. Lade den spezifischen TaskStep, der abgeschlossen werden soll
-        TaskStep step = taskStepRepository.findById(taskStepId)
-                .orElseThrow(() -> new EntityNotFoundException("TaskStep mit ID " + taskStepId + " nicht gefunden."));
-
-        // 2. Sicherheits-Checks
-        if (step.getAssignedUser() == null || !Objects.equals(step.getAssignedUser().getId(), userId)) {
-            throw new IllegalArgumentException("Benutzer ist nicht dem Arbeitsschritt zugeordnet.");
-        }
-        if (step.getStatus() == TaskStepStatus.COMPLETED) {
-            return; // Nichts zu tun, da bereits erledigt
-        }
-
-        // 3. Status des aktuellen Schritts aktualisieren
-        step.setStatus(TaskStepStatus.COMPLETED);
-        step.setCompletedAt(LocalDateTime.now());
-        taskStepRepository.save(step);
-
-        moveToNextStep(step.getTask());
-
-        Map<String, Object> updateInfo = new HashMap<>();
-        updateInfo.put("taskId", step.getTask().getId());
-        updateInfo.put("message", "Ein Schritt wurde abgeschlossen!");
-        notificationService.sendProgressUpdate(updateInfo);
+    public TaskStep setManualPriority(Long taskStepId, int manualPriority) {
+        TaskStep step = findTaskStep(taskStepId);
+        step.setManualPriority(manualPriority);
+        step.setPriority(mapManualPriority(manualPriority));
+        return taskStepRepository.save(step);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<TaskStep> getTaskStepsByUserId(Long userId) {
-        return taskStepRepository.findAllByAssignedUserId(userId);
+    public List<TaskStep> getActiveTaskStepsByUser(Long userId) {
+        return taskStepRepository.findByAssignedUserIdAndStatusNot(userId, TaskStepStatus.COMPLETED);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ActorDashboardItemDto> getActorDashboardItems(Long userId,
+                                                              TaskStepStatus status,
+                                                              Priority priority,
+                                                              String query) {
+        Stream<TaskStep> steps = taskStepRepository
+                .findByAssignedUserIdAndStatusNot(userId, TaskStepStatus.COMPLETED)
+                .stream();
+        if (status != null) {
+            steps = steps.filter(step -> step.getStatus() == status);
+        }
+        if (priority != null) {
+            steps = steps.filter(step -> step.getPriority() == priority);
+        }
+        if (query != null && !query.isBlank()) {
+            String needle = query.toLowerCase(Locale.ROOT);
+            steps = steps.filter(step -> containsIgnoreCase(step.getTask().getTitle(), needle)
+                    || containsIgnoreCase(step.getWorkflowStep().getName(), needle));
+        }
+        return steps.map(this::toActorDashboardItem).toList();
     }
 
     @Override
     @Transactional
-    public void overridePriority(Long taskStepId, Priority priority) {
-        TaskStep step = findTaskStepById(taskStepId);
-        step.setPriority(priority);
-        taskStepRepository.save(step);
+    public void completeTaskStep(Long taskId, Long taskStepId, Long userId) {
+        taskService.completeStep(taskId, taskStepId, userId);
     }
 
-    @Override
-    public void calculatePriority(Long taskStepId) {
-        System.out.println("TODO: Priorität für Step " + taskStepId + " berechnen.");
+    private TaskStep findTaskStep(Long id) {
+        return taskStepRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("TaskStep %d nicht gefunden".formatted(id)));
     }
 
+    private User findUser(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User %d nicht gefunden".formatted(id)));
+    }
 
-    // --- Private Hilfsmethoden ---
+    private ActorDashboardItemDto toActorDashboardItem(TaskStep step) {
+        return new ActorDashboardItemDto(
+                step.getTask().getId(),
+                step.getTask().getTitle(),
+                step.getTask().getDeadline(),
+                step.getTask().getStatus(),
+                step.getId(),
+                step.getWorkflowStep().getName(),
+                step.getWorkflowStep().getSequenceOrder(),
+                step.getStatus(),
+                step.getPriority(),
+                step.getAssignedAt()
+        );
+    }
 
-    private void moveToNextStep(Task task) {
-        List<TaskStep> steps = task.getTaskSteps();
-        int currentIndex = task.getCurrentStepIndex();
-        int nextIndex = currentIndex + 1;
-
-        if (nextIndex >= steps.size()) {
-            task.setStatus(TaskStatus.COMPLETED);
-            task.setCompletedAt(LocalDateTime.now());
-        } else {
-            TaskStep nextStep = steps.get(nextIndex);
-
-            // TODO: Logik zur Zuweisung des nächsten Benutzers (resolveAssignee)
-            // nextStep.setAssignedUser(...);
-            nextStep.setStatus(TaskStepStatus.ASSIGNED);
-            nextStep.setAssignedAt(LocalDateTime.now());
-            task.setCurrentStepIndex(nextIndex);
-            if (task.getStatus() == TaskStatus.NOT_STARTED) {
-                task.setStatus(TaskStatus.IN_PROGRESS);
-            }
+    private boolean containsIgnoreCase(String value, String needleLower) {
+        if (value == null) {
+            return false;
         }
-        taskRepository.save(task);
+        return value.toLowerCase(Locale.ROOT).contains(needleLower);
     }
 
-    private TaskStep findTaskStepById(Long taskStepId) {
-        return taskStepRepository.findById(taskStepId)
-                .orElseThrow(() -> new EntityNotFoundException("TaskStep %d nicht gefunden".formatted(taskStepId)));
-    }
-
-    private User findUserById(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User %d nicht gefunden".formatted(userId)));
+    private Priority mapManualPriority(int manualPriority) {
+        if (manualPriority <= 1) {
+            return Priority.IMMEDIATE;
+        }
+        if (manualPriority == 2) {
+            return Priority.MEDIUM_TERM;
+        }
+        return Priority.LONG_TERM;
     }
 }

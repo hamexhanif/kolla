@@ -4,6 +4,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team5.prototype.taskstep.Priority;
+import team5.prototype.taskstep.PriorityService;
 import team5.prototype.taskstep.TaskStep;
 import team5.prototype.taskstep.TaskStepStatus;
 import team5.prototype.user.User;
@@ -22,7 +23,7 @@ public class TaskServiceImpl implements TaskService {
     private final TaskRepository taskRepository;
     private final WorkflowDefinitionRepository definitionRepository;
     private final UserRepository userRepository;
-    // private final PriorityService priorityService; // Noch nicht implementiert
+    private final PriorityService priorityService;
 
     public TaskServiceImpl(TaskRepository taskRepository,
                            WorkflowDefinitionRepository definitionRepository,
@@ -31,7 +32,7 @@ public class TaskServiceImpl implements TaskService {
         this.taskRepository = taskRepository;
         this.definitionRepository = definitionRepository;
         this.userRepository = userRepository;
-        // this.priorityService = priorityService;
+        this.priorityService = priorityService;
     }
 
     @Override
@@ -68,11 +69,40 @@ public class TaskServiceImpl implements TaskService {
         List<TaskStep> concreteSteps = buildTaskSteps(task, orderedSteps, overrides);
         task.setTaskSteps(concreteSteps);
 
-        // refreshPriorityForActiveSteps(task); // Diese Methode ist noch auskommentiert
+        refreshPriorityForNotCompletedTaskSteps(task);
         return taskRepository.save(task);
     }
 
-    // In TaskServiceImpl.java
+    @Override
+    @Transactional
+    public void completeStep(Long taskId, Long stepId, Long userId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new EntityNotFoundException("Task %d nicht gefunden".formatted(taskId)));
+
+        TaskStep step = task.getTaskSteps()
+                .stream()
+                .filter(ts -> Objects.equals(ts.getId(), stepId))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException("TaskStep %d nicht gefunden".formatted(stepId)));
+
+        if (!Objects.equals(step.getAssignedUser().getId(), userId)) {
+            throw new IllegalArgumentException("Benutzer %d ist nicht dem Arbeitsschritt zugeordnet".formatted(userId));
+        }
+        if (step.getStatus() == TaskStepStatus.COMPLETED) {
+            return;
+        }
+        if (step.getStatus() == TaskStepStatus.WAITING) {
+            throw new IllegalStateException("Arbeitsschritt ist noch nicht aktiv.");
+        }
+
+        step.setStatus(TaskStepStatus.COMPLETED);
+        step.setCompletedAt(now());
+        step.setStartedAt(Optional.ofNullable(step.getStartedAt()).orElse(step.getAssignedAt()));
+
+        moveToNextStep(task, step);
+        refreshPriorityForNotCompletedTaskSteps(task);
+        taskRepository.save(task);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -97,6 +127,28 @@ public class TaskServiceImpl implements TaskService {
 
     // --- Private Hilfsmethoden, die nur für die Task-Erstellung relevant sind ---
 
+    private void moveToNextStep(Task task, TaskStep completedStep) {
+        List<TaskStep> steps = task.getTaskSteps();
+        int completedIndex = steps.indexOf(completedStep);
+        int nextIndex = completedIndex + 1;
+
+        if (nextIndex >= steps.size()) {
+            task.setStatus(TaskStatus.COMPLETED);
+            task.setCompletedAt(now());
+            task.setCurrentStepIndex(nextIndex);
+            return;
+        }
+
+        TaskStep nextStep = steps.get(nextIndex);
+        nextStep.setStatus(TaskStepStatus.ASSIGNED);
+        nextStep.setAssignedAt(now());
+        task.setCurrentStepIndex(nextIndex);
+
+        if (task.getStatus() == TaskStatus.NOT_STARTED) {
+            task.setStatus(TaskStatus.IN_PROGRESS);
+        }
+    }
+
     private List<TaskStep> buildTaskSteps(Task task, List<WorkflowStep> orderedSteps, Map<Long, Long> overrides) {
         List<TaskStep> steps = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
@@ -115,6 +167,12 @@ public class TaskServiceImpl implements TaskService {
             steps.add(builder.build());
         }
         return steps;
+    }
+
+    private void refreshPriorityForNotCompletedTaskSteps(Task task) {
+        task.getTaskSteps().stream()
+                .filter(step -> step.getStatus() != TaskStepStatus.COMPLETED)
+                .forEach(step -> step.setPriority(priorityService.calculatePriority(step)));
     }
 
     private User resolveAssignee(WorkflowStep workflowStep, Map<Long, Long> overrides, Long tenantId) {

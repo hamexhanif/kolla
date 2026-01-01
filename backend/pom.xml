@@ -94,6 +94,11 @@
 			<artifactId>h2</artifactId>
 			<version>2.4.240</version>
 		</dependency>
+        <!-- wichtig damit h2-console laufbar in Spring Boot 4.0.0 ist-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-h2console</artifactId>
+        </dependency>
 	</dependencies>
 
 	<build>

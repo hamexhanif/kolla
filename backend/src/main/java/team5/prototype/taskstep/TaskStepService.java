@@ -1,25 +1,37 @@
 package team5.prototype.taskstep;
 
+import team5.prototype.dto.ActorDashboardItemDto;
+
 import java.util.List;
 
 public interface TaskStepService {
 
-    void assignTaskStepToUser(Long taskStepId, Long userId);
-
-    void completeTaskStep(Long taskStepId, Long userId);
-
-    List<TaskStep> getTaskStepsByUserId(Long userId);
+    /**
+     * Ordnet einen TaskStep einem Benutzer zu und setzt den Status auf ASSIGNED.
+     */
+    TaskStep assignTaskStepToUser(Long taskStepId, Long userId);
 
     /**
      * Setzt eine manuelle Priorität und überschreibt die automatische.
      * Erfüllt die TODOs 'overridePriority' und 'setManualPriority'.
      */
-    void overridePriority(Long taskStepId, Priority priority);
+    TaskStep setManualPriority(Long taskStepId, int manualPriority);
 
     /**
-     * Erfüllt das TODO 'calculatePriority'.
-     * Stößt die Neuberechnung der Priorität für die übergeordnete Task an.
+     * Liefert alle nicht abgeschlossenen TaskSteps eines Nutzers.
      */
-    void calculatePriority(Long taskStepId);
+    List<TaskStep> getActiveTaskStepsByUser(Long userId);
 
+    /**
+     * Liefert Dashboard-Eintraege fuer einen Nutzer mit optionalen Filtern.
+     */
+    List<ActorDashboardItemDto> getActorDashboardItems(Long userId,
+                                                       TaskStepStatus status,
+                                                       Priority priority,
+                                                       String query);
+
+    /**
+     * Schließt einen TaskStep ab (inkl. Fortschritts-Update auf der zugehörigen Task).
+     */
+    void completeTaskStep(Long taskId, Long taskStepId, Long userId);
 }
