@@ -40,5 +40,6 @@ public interface TaskService {
      * @return Ein Optional, das die Task-Entität enthält, falls gefunden.
      */
     Optional<Task> getTaskById(Long taskId);
-
+    List<TaskDto> getAllTasksAsDto();
+    Optional<TaskDto> getTaskByIdAsDto(Long taskId);
 }

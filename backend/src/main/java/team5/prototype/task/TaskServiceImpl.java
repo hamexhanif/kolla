@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import team5.prototype.taskstep.Priority;
 import team5.prototype.taskstep.PriorityService;
 import team5.prototype.taskstep.TaskStep;
+import team5.prototype.taskstep.TaskStepDto;
 import team5.prototype.taskstep.TaskStepStatus;
 import team5.prototype.user.User;
 import team5.prototype.user.UserRepository;
@@ -37,21 +38,21 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
-    public Task createTaskFromDefinition(TaskDto request) { // PARAMETER GEÄNDERT
-        WorkflowDefinition definition = definitionRepository.findById(request.getWorkflowDefinitionId()) // ANPASSUNG
+    public Task createTaskFromDefinition(TaskDto request) {
+        WorkflowDefinition definition = definitionRepository.findById(request.getWorkflowDefinitionId())
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "WorkflowDefinition %d nicht gefunden".formatted(request.getWorkflowDefinitionId()))); // ANPASSUNG
+                        "WorkflowDefinition %d nicht gefunden".formatted(request.getWorkflowDefinitionId())));
 
         if (definition.getSteps().isEmpty()) {
             throw new IllegalStateException("WorkflowDefinition enthält keine Schritte");
         }
 
-        User creator = findUser(request.getCreatorUserId()); // ANPASSUNG
+        User creator = findUser(request.getCreatorUserId());
 
         Task task = Task.builder()
-                .title(request.getTitle()) // ANPASSUNG
-                .description(request.getDescription()) // ANPASSUNG
-                .deadline(request.getDeadline()) // ANPASSUNG
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .deadline(request.getDeadline())
                 .workflowDefinition(definition)
                 .tenant(definition.getTenant())
                 .createdBy(creator)
@@ -65,7 +66,7 @@ public class TaskServiceImpl implements TaskService {
                 .sorted(Comparator.comparingInt(WorkflowStep::getSequenceOrder))
                 .collect(Collectors.toList());
 
-        Map<Long, Long> overrides = request.getStepAssignments(); // ANPASSUNG
+        Map<Long, Long> overrides = request.getStepAssignments();
         List<TaskStep> concreteSteps = buildTaskSteps(task, orderedSteps, overrides);
         task.setTaskSteps(concreteSteps);
 
@@ -125,7 +126,74 @@ public class TaskServiceImpl implements TaskService {
         );
     }
 
-    // --- Private Hilfsmethoden, die nur für die Task-Erstellung relevant sind ---
+    // NEUE METHODE: Gibt DTOs zurück statt Entities
+    @Override
+    @Transactional(readOnly = true)
+    public List<TaskDto> getAllTasksAsDto() {
+        List<Task> tasks = taskRepository.findAll();
+        // Konvertierung INNERHALB der Transaction
+        return tasks.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    // NEUE METHODE: Gibt DTO zurück statt Entity
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<TaskDto> getTaskByIdAsDto(Long taskId) {
+        return taskRepository.findById(taskId)
+                .map(this::convertToDto);
+    }
+
+    // ALTE Methoden bleiben für Kompatibilität
+    @Override
+    @Transactional(readOnly = true)
+    public List<Task> getAllTasks() {
+        return taskRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Task> getTaskById(Long taskId) {
+        return taskRepository.findById(taskId);
+    }
+
+    // --- Private Konvertierungs-Hilfsmethoden ---
+
+    private TaskDto convertToDto(Task task) {
+        TaskDto dto = new TaskDto();
+        dto.setId(task.getId());
+        dto.setTitle(task.getTitle());
+        dto.setDeadline(task.getDeadline());
+        if (task.getStatus() != null) {
+            dto.setStatus(task.getStatus().name());
+        }
+
+        if (task.getTaskSteps() != null) {
+            List<TaskStepDto> stepDtos = task.getTaskSteps().stream()
+                    .map(this::convertStepToDto)
+                    .collect(Collectors.toList());
+            dto.setSteps(stepDtos);
+        }
+        return dto;
+    }
+
+    private TaskStepDto convertStepToDto(TaskStep step) {
+        TaskStepDto dto = new TaskStepDto();
+        dto.setId(step.getId());
+        if (step.getWorkflowStep() != null) {
+            dto.setName(step.getWorkflowStep().getName());
+        }
+        if (step.getStatus() != null) {
+            dto.setStatus(step.getStatus().name());
+        }
+        if (step.getAssignedUser() != null) {
+            dto.setAssignedUsername(step.getAssignedUser().getUsername());
+        }
+        return dto;
+    }
+
+    // --- Private Hilfsmethoden ---
 
     private void moveToNextStep(Task task, TaskStep completedStep) {
         List<TaskStep> steps = task.getTaskSteps();
@@ -160,7 +228,7 @@ public class TaskServiceImpl implements TaskService {
                     .workflowStep(workflowStep)
                     .assignedUser(assignee)
                     .status(index == 0 ? TaskStepStatus.ASSIGNED : TaskStepStatus.WAITING)
-                    .priority(Priority.MEDIUM_TERM); // Vorerst fester Wert
+                    .priority(Priority.MEDIUM_TERM);
             if (index == 0) {
                 builder.assignedAt(now);
             }
@@ -191,16 +259,5 @@ public class TaskServiceImpl implements TaskService {
 
     private LocalDateTime now() {
         return LocalDateTime.now();
-    }
-    @Override
-    public List<Task> getAllTasks() {
-        // TODO: Implementierung später hinzufügen
-        return List.of(); // Gibt eine leere Liste zurück
-    }
-
-    @Override
-    public Optional<Task> getTaskById(Long taskId) {
-        // TODO: Implementierung später hinzufügen
-        return Optional.empty(); // Gibt ein leeres Optional zurück
     }
 }

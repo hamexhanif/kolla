@@ -31,5 +31,6 @@ public class TaskDto {
     public TaskDto() {}
 
     public void setCreatedById(Long id) {
+        this.creatorUserId = id;
     }
 }

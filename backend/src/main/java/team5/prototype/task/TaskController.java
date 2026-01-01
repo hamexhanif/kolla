@@ -2,11 +2,8 @@ package team5.prototype.task;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import team5.prototype.taskstep.TaskStep;
-import team5.prototype.taskstep.TaskStepDto;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -18,26 +15,24 @@ public class TaskController {
         this.taskService = taskService;
     }
 
-    // --- Endpunkte ---
-
     @PostMapping
     public TaskDto createTask(@RequestBody TaskDto requestDto) {
-        // KORREKTER AUFRUF: Übergibt das gesamte DTO-Objekt
         Task createdTask = taskService.createTaskFromDefinition(requestDto);
+        // Die Konvertierung passiert noch hier, aber das ist OK weil createTaskFromDefinition @Transactional ist
         return convertToDto(createdTask);
     }
 
     @GetMapping
     public List<TaskDto> getAllTasks() {
-        return taskService.getAllTasks().stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+        // NEUE Methode verwenden - Konvertierung passiert im Service
+        return taskService.getAllTasksAsDto();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<TaskDto> getTaskById(@PathVariable Long id) {
-        return taskService.getTaskById(id)
-                .map(task -> ResponseEntity.ok(convertToDto(task)))
+        // NEUE Methode verwenden - Konvertierung passiert im Service
+        return taskService.getTaskByIdAsDto(id)
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -47,8 +42,7 @@ public class TaskController {
         return ResponseEntity.ok(progress);
     }
 
-    // --- Private Konvertierungs-Hilfsmethoden ---
-
+    // Diese Methode nur noch für createTask verwendet
     private TaskDto convertToDto(Task task) {
         TaskDto dto = new TaskDto();
         dto.setId(task.getId());
@@ -56,28 +50,6 @@ public class TaskController {
         dto.setDeadline(task.getDeadline());
         if (task.getStatus() != null) {
             dto.setStatus(task.getStatus().name());
-        }
-
-        if (task.getTaskSteps() != null) {
-            List<TaskStepDto> stepDtos = task.getTaskSteps().stream()
-                    .map(this::convertStepToDto)
-                    .collect(Collectors.toList());
-            dto.setSteps(stepDtos);
-        }
-        return dto;
-    }
-
-    private TaskStepDto convertStepToDto(TaskStep step) {
-        TaskStepDto dto = new TaskStepDto();
-        dto.setId(step.getId());
-        if (step.getWorkflowStep() != null) {
-            dto.setName(step.getWorkflowStep().getName());
-        }
-        if (step.getStatus() != null) {
-            dto.setStatus(step.getStatus().name());
-        }
-        if (step.getAssignedUser() != null) {
-            dto.setAssignedUsername(step.getAssignedUser().getUsername());
         }
         return dto;
     }
