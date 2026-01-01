@@ -31,3 +31,11 @@ Content-Type: application/json
 # Du wirst in der Antwort sehen, dass der erste Schritt jetzt den Status "COMPLETED"
 # und der zweite Schritt den Status "ASSIGNED" hat. Der "currentStepIndex" des Tasks wird auf 1 stehen.
 GET http://localhost:8080/api/tasks
+
+### Setze die Priorität für Schritt 2 manuell auf "sofort" (1)
+POST http://localhost:8080/api/task-steps/2/set-priority
+Content-Type: application/json
+
+{
+  "manualPriority": 1
+}

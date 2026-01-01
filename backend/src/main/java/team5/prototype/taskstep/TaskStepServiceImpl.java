@@ -126,4 +126,34 @@ public class TaskStepServiceImpl implements TaskStepService {
         }
         return Priority.LONG_TERM;
     }
+    // NEUE METHODE
+    @Override
+    @Transactional
+    public TaskStepDto setManualPriorityAndConvertToDto(Long taskStepId, int manualPriority) {
+        // Ruft die bestehende Logik auf, um die Änderung zu speichern
+        TaskStep updatedStep = setManualPriority(taskStepId, manualPriority);
+
+        // Führt die Konvertierung INNERHALB der Transaktion durch
+        return convertToDto(updatedStep);
+    }
+    // Wir fügen hier eine private Konvertierungsmethode hinzu
+    private TaskStepDto convertToDto(TaskStep step) {
+        TaskStepDto dto = new TaskStepDto();
+        dto.setId(step.getId());
+        // Da wir uns in der Transaktion befinden, können diese Aufrufe nicht fehlschlagen
+        if (step.getWorkflowStep() != null) {
+            dto.setName(step.getWorkflowStep().getName());
+        }
+        if (step.getStatus() != null) {
+            dto.setStatus(step.getStatus().name());
+        }
+        if (step.getAssignedUser() != null) {
+            dto.setAssignedUsername(step.getAssignedUser().getUsername());
+        }
+        if (step.getPriority() != null) {
+            dto.setPriority(step.getPriority().name());
+        }
+        return dto;
+    }
+
 }
