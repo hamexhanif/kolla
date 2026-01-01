@@ -223,12 +223,14 @@ public class TaskServiceImpl implements TaskService {
         for (int index = 0; index < orderedSteps.size(); index++) {
             WorkflowStep workflowStep = orderedSteps.get(index);
             User assignee = resolveAssignee(workflowStep, overrides, task.getTenant().getId());
+
+            // KORREKTUR: Wir setzen hier KEINE Priorität mehr, da dies später zentral geschieht.
             TaskStep.TaskStepBuilder builder = TaskStep.builder()
                     .task(task)
                     .workflowStep(workflowStep)
                     .assignedUser(assignee)
-                    .status(index == 0 ? TaskStepStatus.ASSIGNED : TaskStepStatus.WAITING)
-                    .priority(Priority.MEDIUM_TERM);
+                    .status(index == 0 ? TaskStepStatus.ASSIGNED : TaskStepStatus.WAITING);
+
             if (index == 0) {
                 builder.assignedAt(now);
             }
