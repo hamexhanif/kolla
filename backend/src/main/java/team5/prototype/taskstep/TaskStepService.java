@@ -34,4 +34,5 @@ public interface TaskStepService {
      * Schließt einen TaskStep ab (inkl. Fortschritts-Update auf der zugehörigen Task).
      */
     void completeTaskStep(Long taskId, Long taskStepId, Long userId);
+    TaskStepDto setManualPriorityAndConvertToDto(Long taskStepId, int manualPriority);
 }
