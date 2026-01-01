@@ -2,10 +2,10 @@ package team5.prototype.taskstep;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import team5.prototype.dto.CompleteStepRequestDto;
+import team5.prototype.dto.CompleteStepRequestDto; // Stelle sicher, dass der Import-Pfad korrekt ist
 
 @RestController
-@RequestMapping("/api") // Wir legen eine allgemeine Basis-URL fest
+@RequestMapping("/api/task-steps") // Eine Basis-URL für alle Step-bezogenen Operationen
 public class TaskStepController {
 
     private final TaskStepService taskStepService;
@@ -14,14 +14,13 @@ public class TaskStepController {
         this.taskStepService = taskStepService;
     }
 
-    // Die URL aus der README: POST /api/tasks/{taskId}/steps/{stepId}/complete
-    @PostMapping("/tasks/{taskId}/steps/{stepId}/complete")
-    public ResponseEntity<Void> completeTaskStep(@PathVariable Long taskId,
-                                                 @PathVariable Long stepId,
+    // Endpunkt zum Abschließen eines Schrittes
+    @PostMapping("/{stepId}/complete")
+    public ResponseEntity<Void> completeTaskStep(@PathVariable Long stepId,
                                                  @RequestBody CompleteStepRequestDto request) {
 
-        // Ruft die korrekte Methode im Service auf
-        taskStepService.completeTaskStep(taskId, stepId, request.getUserId());
+        // Die Logik wird an den Service delegiert
+        taskStepService.completeTaskStep(request.getTaskId(), stepId, request.getUserId());
 
         return ResponseEntity.ok().build();
     }

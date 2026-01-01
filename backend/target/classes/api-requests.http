@@ -1,0 +1,33 @@
+### ========================================
+### Task & TaskStep Endpunkte
+### ========================================
+
+### Test 1: Alle Tasks abrufen (um die IDs zu sehen)
+# Dieser Request ruft die Liste aller Tasks ab.
+# Schau dir die Antwort an, um die ID des Tasks und seiner Schritte zu finden.
+GET http://localhost:8080/api/tasks
+
+
+### Test 2: Einen Arbeitsschritt abschließen
+# WICHTIG: Ersetze die IDs unten mit den echten IDs aus der Antwort von "Test 1"
+#
+# URL-Parameter:
+#   - {stepId}: Ersetze '1' mit der ID des ersten Task-Schrittes (der mit Status "ASSIGNED").
+#
+# Body-Parameter:
+#   - "userId": Ersetze '2' mit der ID des Benutzers, dem der Schritt zugewiesen ist (der "developer"). In unserem DataSeeder hat er die ID 2.
+#   - "taskId": Ersetze '1' mit der ID des Tasks, zu dem der Schritt gehört.
+POST http://localhost:8080/api/task-steps/1/complete
+Content-Type: application/json
+
+{
+  "userId": 2,
+  "taskId": 1
+}
+
+
+### Test 3: Überprüfe das Ergebnis
+# Rufe die Liste der Tasks erneut ab.
+# Du wirst in der Antwort sehen, dass der erste Schritt jetzt den Status "COMPLETED"
+# und der zweite Schritt den Status "ASSIGNED" hat. Der "currentStepIndex" des Tasks wird auf 1 stehen.
+GET http://localhost:8080/api/tasks
