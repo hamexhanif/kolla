@@ -3,6 +3,7 @@ package team5.prototype.task;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import team5.prototype.notification.NotificationService;
 import team5.prototype.taskstep.Priority;
 import team5.prototype.taskstep.PriorityService;
 import team5.prototype.taskstep.TaskStep;
@@ -25,15 +26,17 @@ public class TaskServiceImpl implements TaskService {
     private final WorkflowDefinitionRepository definitionRepository;
     private final UserRepository userRepository;
     private final PriorityService priorityService;
+    private final NotificationService notificationService;
 
     public TaskServiceImpl(TaskRepository taskRepository,
                            WorkflowDefinitionRepository definitionRepository,
                            UserRepository userRepository,
-                           PriorityService priorityService) {
+                           PriorityService priorityService, NotificationService notificationService) {
         this.taskRepository = taskRepository;
         this.definitionRepository = definitionRepository;
         this.userRepository = userRepository;
         this.priorityService = priorityService;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -77,6 +80,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional
     public void completeStep(Long taskId, Long stepId, Long userId) {
+        // --- DEIN BESTEHENDER, KORREKTER CODE (unverändert) ---
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new EntityNotFoundException("Task %d nicht gefunden".formatted(taskId)));
 
@@ -90,7 +94,7 @@ public class TaskServiceImpl implements TaskService {
             throw new IllegalArgumentException("Benutzer %d ist nicht dem Arbeitsschritt zugeordnet".formatted(userId));
         }
         if (step.getStatus() == TaskStepStatus.COMPLETED) {
-            return;
+            return; // Bereits erledigt, nichts zu tun.
         }
         if (step.getStatus() == TaskStepStatus.WAITING) {
             throw new IllegalStateException("Arbeitsschritt ist noch nicht aktiv.");
@@ -103,6 +107,22 @@ public class TaskServiceImpl implements TaskService {
         moveToNextStep(task, step);
         refreshPriorityForNotCompletedTaskSteps(task);
         taskRepository.save(task);
+
+
+        // ===================================================================
+        // NEU HINZUGEFÜGT: Benachrichtigung senden
+        // ===================================================================
+        // Wir erstellen ein aussagekräftiges Objekt (Payload), das wir als JSON an das Frontend senden.
+        // Eine Map ist hierfür sehr flexibel.
+        Map<String, Object> notificationPayload = Map.of(
+                "message", String.format("Arbeitsschritt '%s' (ID: %d) wurde abgeschlossen.", step.getWorkflowStep().getName(), stepId),
+                "taskId", taskId,
+                "completedStepId", stepId,
+                "newOverallTaskStatus", task.getStatus().name()
+        );
+
+        // Rufe den NotificationService auf, um das Payload an das richtige Topic zu senden.
+        notificationService.sendTaskUpdateNotification(taskId, notificationPayload);
     }
 
     @Override
