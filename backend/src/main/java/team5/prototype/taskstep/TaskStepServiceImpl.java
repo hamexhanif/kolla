@@ -4,6 +4,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team5.prototype.dto.ActorDashboardItemDto;
+import team5.prototype.notification.NotificationService;
 import team5.prototype.task.TaskService;
 import team5.prototype.user.User;
 import team5.prototype.user.UserRepository;
@@ -11,6 +12,7 @@ import team5.prototype.user.UserRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Stream;
 
 @Service
@@ -19,13 +21,15 @@ public class TaskStepServiceImpl implements TaskStepService {
     private final TaskStepRepository taskStepRepository;
     private final UserRepository userRepository;
     private final TaskService taskService;
+    private final NotificationService notificationService;
 
     public TaskStepServiceImpl(TaskStepRepository taskStepRepository,
                                UserRepository userRepository,
-                               TaskService taskService) {
+                               TaskService taskService, NotificationService notificationService) {
         this.taskStepRepository = taskStepRepository;
         this.userRepository = userRepository;
         this.taskService = taskService;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -47,7 +51,20 @@ public class TaskStepServiceImpl implements TaskStepService {
         TaskStep step = findTaskStep(taskStepId);
         step.setManualPriority(manualPriority);
         step.setPriority(mapManualPriority(manualPriority));
-        return taskStepRepository.save(step);
+        TaskStep savedStep = taskStepRepository.save(step);
+
+        // ===================================================================
+        // NEU HINZUGEFÜGT: Benachrichtigung senden
+        // ===================================================================
+        Map<String, Object> payload = Map.of(
+                "message", String.format("Die Priorität für Schritt '%s' wurde manuell geändert.", savedStep.getWorkflowStep().getName()),
+                "taskStepId", savedStep.getId(),
+                "newPriority", savedStep.getPriority().name()
+        );
+        // Wir senden das Update an den Kanal des übergeordneten Tasks
+        notificationService.sendTaskUpdateNotification(savedStep.getTask().getId(), payload);
+
+        return savedStep;
     }
 
     @Override

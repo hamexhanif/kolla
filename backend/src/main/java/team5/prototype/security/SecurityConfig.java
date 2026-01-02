@@ -32,7 +32,8 @@ public class SecurityConfig {
                                 "/ws/**",           // WebSocket Endpunkt
                                 "/ws",              // Auch ohne /**
                                 "/app/**",          // STOMP App-Destinations
-                                "/topic/**"         // STOMP Topic-Subscriptions
+                                "/topic/**",        // STOMP Topic-Subscriptions
+                                "/api/task-steps/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
