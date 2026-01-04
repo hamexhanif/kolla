@@ -4,6 +4,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team5.prototype.dto.ActorDashboardItemDto;
+import team5.prototype.notification.NotificationService;
 import team5.prototype.task.TaskService;
 import team5.prototype.user.User;
 import team5.prototype.user.UserRepository;
@@ -11,6 +12,7 @@ import team5.prototype.user.UserRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Stream;
 
 @Service
@@ -19,13 +21,15 @@ public class TaskStepServiceImpl implements TaskStepService {
     private final TaskStepRepository taskStepRepository;
     private final UserRepository userRepository;
     private final TaskService taskService;
+    private final NotificationService notificationService;
 
     public TaskStepServiceImpl(TaskStepRepository taskStepRepository,
                                UserRepository userRepository,
-                               TaskService taskService) {
+                               TaskService taskService, NotificationService notificationService) {
         this.taskStepRepository = taskStepRepository;
         this.userRepository = userRepository;
         this.taskService = taskService;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -47,7 +51,20 @@ public class TaskStepServiceImpl implements TaskStepService {
         TaskStep step = findTaskStep(taskStepId);
         step.setManualPriority(manualPriority);
         step.setPriority(mapManualPriority(manualPriority));
-        return taskStepRepository.save(step);
+        TaskStep savedStep = taskStepRepository.save(step);
+
+        // ===================================================================
+        // NEU HINZUGEFÜGT: Benachrichtigung senden
+        // ===================================================================
+        Map<String, Object> payload = Map.of(
+                "message", String.format("Die Priorität für Schritt '%s' wurde manuell geändert.", savedStep.getWorkflowStep().getName()),
+                "taskStepId", savedStep.getId(),
+                "newPriority", savedStep.getPriority().name()
+        );
+        // Wir senden das Update an den Kanal des übergeordneten Tasks
+        notificationService.sendTaskUpdateNotification(savedStep.getTask().getId(), payload);
+
+        return savedStep;
     }
 
     @Override
@@ -126,4 +143,34 @@ public class TaskStepServiceImpl implements TaskStepService {
         }
         return Priority.LONG_TERM;
     }
+    // NEUE METHODE
+    @Override
+    @Transactional
+    public TaskStepDto setManualPriorityAndConvertToDto(Long taskStepId, int manualPriority) {
+        // Ruft die bestehende Logik auf, um die Änderung zu speichern
+        TaskStep updatedStep = setManualPriority(taskStepId, manualPriority);
+
+        // Führt die Konvertierung INNERHALB der Transaktion durch
+        return convertToDto(updatedStep);
+    }
+    // Wir fügen hier eine private Konvertierungsmethode hinzu
+    private TaskStepDto convertToDto(TaskStep step) {
+        TaskStepDto dto = new TaskStepDto();
+        dto.setId(step.getId());
+        // Da wir uns in der Transaktion befinden, können diese Aufrufe nicht fehlschlagen
+        if (step.getWorkflowStep() != null) {
+            dto.setName(step.getWorkflowStep().getName());
+        }
+        if (step.getStatus() != null) {
+            dto.setStatus(step.getStatus().name());
+        }
+        if (step.getAssignedUser() != null) {
+            dto.setAssignedUsername(step.getAssignedUser().getUsername());
+        }
+        if (step.getPriority() != null) {
+            dto.setPriority(step.getPriority().name());
+        }
+        return dto;
+    }
+
 }

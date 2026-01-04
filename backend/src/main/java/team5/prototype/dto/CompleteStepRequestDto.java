@@ -8,4 +8,5 @@ import lombok.Setter;
 public class CompleteStepRequestDto {
 
     private Long userId;
+    private Long taskId;
 }

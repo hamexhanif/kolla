@@ -29,4 +29,8 @@ public class TaskDto {
 
     // Leerer Konstruktor wird von JSON-Bibliothek benötigt
     public TaskDto() {}
+
+    public void setCreatedById(Long id) {
+        this.creatorUserId = id;
+    }
 }
