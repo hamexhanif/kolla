@@ -3,6 +3,10 @@ package team5.prototype.task;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import team5.prototype.dto.ManagerDashboardDto;
+import team5.prototype.dto.ManagerTaskRowDto;
+import team5.prototype.dto.TaskDetailsDto;
+import team5.prototype.dto.TaskDetailsStepDto;
 import team5.prototype.notification.NotificationService;
 import team5.prototype.taskstep.Priority;
 import team5.prototype.taskstep.PriorityService;
@@ -15,8 +19,14 @@ import team5.prototype.workflow.definition.WorkflowDefinition;
 import team5.prototype.workflow.definition.WorkflowDefinitionRepository;
 import team5.prototype.workflow.step.WorkflowStep;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,7 +41,8 @@ public class TaskServiceImpl implements TaskService {
     public TaskServiceImpl(TaskRepository taskRepository,
                            WorkflowDefinitionRepository definitionRepository,
                            UserRepository userRepository,
-                           PriorityService priorityService, NotificationService notificationService) {
+                           PriorityService priorityService,
+                           NotificationService notificationService) {
         this.taskRepository = taskRepository;
         this.definitionRepository = definitionRepository;
         this.userRepository = userRepository;
@@ -47,7 +58,7 @@ public class TaskServiceImpl implements TaskService {
                         "WorkflowDefinition %d nicht gefunden".formatted(request.getWorkflowDefinitionId())));
 
         if (definition.getSteps().isEmpty()) {
-            throw new IllegalStateException("WorkflowDefinition enthält keine Schritte");
+            throw new IllegalStateException("WorkflowDefinition enthaelt keine Schritte");
         }
 
         User creator = findUser(request.getCreatorUserId());
@@ -80,7 +91,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional
     public void completeStep(Long taskId, Long stepId, Long userId) {
-        // --- DEIN BESTEHENDER, KORREKTER CODE (unverändert) ---
+        // --- DEIN BESTEHENDER, KORREKTER CODE (unveraendert) ---
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new EntityNotFoundException("Task %d nicht gefunden".formatted(taskId)));
 
@@ -108,12 +119,11 @@ public class TaskServiceImpl implements TaskService {
         refreshPriorityForNotCompletedTaskSteps(task);
         taskRepository.save(task);
 
-
         // ===================================================================
-        // NEU HINZUGEFÜGT: Benachrichtigung senden
+        // NEU HINZUGEFUEGT: Benachrichtigung senden
         // ===================================================================
-        // Wir erstellen ein aussagekräftiges Objekt (Payload), das wir als JSON an das Frontend senden.
-        // Eine Map ist hierfür sehr flexibel.
+        // Wir erstellen ein aussagekraeftiges Objekt (Payload), das wir als JSON an das Frontend senden.
+        // Eine Map ist hierfuer sehr flexibel.
         Map<String, Object> notificationPayload = Map.of(
                 "message", String.format("Arbeitsschritt '%s' (ID: %d) wurde abgeschlossen.", step.getWorkflowStep().getName(), stepId),
                 "taskId", taskId,
@@ -146,7 +156,47 @@ public class TaskServiceImpl implements TaskService {
         );
     }
 
-    // NEUE METHODE: Gibt DTOs zurück statt Entities
+    @Override
+    @Transactional(readOnly = true)
+    public TaskDetailsDto getTaskDetails(Long taskId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new EntityNotFoundException("Task %d nicht gefunden".formatted(taskId)));
+        int totalSteps = task.getTaskSteps().size();
+        int completedSteps = (int) task.getTaskSteps().stream()
+                .filter(step -> step.getStatus() == TaskStepStatus.COMPLETED)
+                .count();
+        Priority priority = resolveTaskPriority(task);
+        List<TaskDetailsStepDto> stepDtos = task.getTaskSteps().stream()
+                .sorted(Comparator.comparingInt(step -> step.getWorkflowStep().getSequenceOrder()))
+                .map(this::toTaskDetailsStep)
+                .toList();
+        return new TaskDetailsDto(task.getId(), task.getTitle(), priority, task.getDeadline(),
+                completedSteps, totalSteps, stepDtos);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ManagerDashboardDto getManagerDashboard() {
+        List<Task> tasks = taskRepository.findAll();
+        LocalDate today = LocalDate.now();
+        long openTasks = tasks.stream()
+                .filter(task -> task.getStatus() != TaskStatus.COMPLETED)
+                .count();
+        long overdueTasks = tasks.stream()
+                .filter(task -> task.getStatus() != TaskStatus.COMPLETED)
+                .filter(task -> task.getDeadline().isBefore(today.atStartOfDay()))
+                .count();
+        long dueTodayTasks = tasks.stream()
+                .filter(task -> task.getStatus() != TaskStatus.COMPLETED)
+                .filter(task -> task.getDeadline().toLocalDate().equals(today))
+                .count();
+        List<ManagerTaskRowDto> rows = tasks.stream()
+                .map(this::toManagerTaskRow)
+                .toList();
+        return new ManagerDashboardDto(openTasks, overdueTasks, dueTodayTasks, rows);
+    }
+
+    // NEUE METHODE: Gibt DTOs zurueck statt Entities
     @Override
     @Transactional(readOnly = true)
     public List<TaskDto> getAllTasksAsDto() {
@@ -157,7 +207,7 @@ public class TaskServiceImpl implements TaskService {
                 .collect(Collectors.toList());
     }
 
-    // NEUE METHODE: Gibt DTO zurück statt Entity
+    // NEUE METHODE: Gibt DTO zurueck statt Entity
     @Override
     @Transactional(readOnly = true)
     public Optional<TaskDto> getTaskByIdAsDto(Long taskId) {
@@ -165,7 +215,7 @@ public class TaskServiceImpl implements TaskService {
                 .map(this::convertToDto);
     }
 
-    // ALTE Methoden bleiben für Kompatibilität
+    // ALTE Methoden bleiben fuer Kompatibilitaet
     @Override
     @Transactional(readOnly = true)
     public List<Task> getAllTasks() {
@@ -244,7 +294,7 @@ public class TaskServiceImpl implements TaskService {
             WorkflowStep workflowStep = orderedSteps.get(index);
             User assignee = resolveAssignee(workflowStep, overrides, task.getTenant().getId());
 
-            // KORREKTUR: Wir setzen hier KEINE Priorität mehr, da dies später zentral geschieht.
+            // KORREKTUR: Wir setzen hier KEINE Prioritaet mehr, da dies spaeter zentral geschieht.
             TaskStep.TaskStepBuilder builder = TaskStep.builder()
                     .task(task)
                     .workflowStep(workflowStep)
@@ -269,9 +319,10 @@ public class TaskServiceImpl implements TaskService {
         if (overrides != null && overrides.containsKey(workflowStep.getId())) {
             return findUser(overrides.get(workflowStep.getId()));
         }
+
         String roleName = workflowStep.getRequiredRole().getName();
         return userRepository.findFirstByRoles_NameAndTenant_IdOrderByIdAsc(roleName, tenantId)
-                .orElseThrow(() -> new IllegalStateException("Kein Benutzer für Rolle %s gefunden".formatted(roleName)));
+                .orElseThrow(() -> new IllegalStateException("Kein Benutzer fuer Rolle %s gefunden".formatted(roleName)));
     }
 
     private User findUser(Long userId) {
@@ -281,5 +332,53 @@ public class TaskServiceImpl implements TaskService {
 
     private LocalDateTime now() {
         return LocalDateTime.now();
+    }
+
+    private Priority resolveTaskPriority(Task task) {
+        return task.getTaskSteps().stream()
+                .filter(step -> step.getStatus() != TaskStepStatus.COMPLETED)
+                .sorted(Comparator.comparingInt(step -> step.getWorkflowStep().getSequenceOrder()))
+                .map(TaskStep::getPriority)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private ManagerTaskRowDto toManagerTaskRow(Task task) {
+        int totalSteps = task.getTaskSteps().size();
+        int completedSteps = (int) task.getTaskSteps().stream()
+                .filter(step -> step.getStatus() == TaskStepStatus.COMPLETED)
+                .count();
+        Priority priority = resolveTaskPriority(task);
+        return new ManagerTaskRowDto(task.getId(), task.getTitle(), priority, completedSteps, totalSteps);
+    }
+
+    private TaskDetailsStepDto toTaskDetailsStep(TaskStep step) {
+        String assigneeName = formatAssigneeName(step.getAssignedUser());
+        LocalDateTime dueDate = resolveStepDueDate(step);
+        return new TaskDetailsStepDto(
+                step.getId(),
+                step.getWorkflowStep().getName(),
+                step.getStatus(),
+                assigneeName,
+                dueDate,
+                step.getPriority()
+        );
+    }
+
+    private LocalDateTime resolveStepDueDate(TaskStep step) {
+        if (step.getAssignedAt() == null) {
+            return null;
+        }
+        return step.getAssignedAt().plusHours(step.getWorkflowStep().getDurationHours());
+    }
+
+    private String formatAssigneeName(User user) {
+        if (user == null) {
+            return null;
+        }
+        String first = Optional.ofNullable(user.getFirstName()).orElse("").trim();
+        String last = Optional.ofNullable(user.getLastName()).orElse("").trim();
+        String full = (first + " " + last).trim();
+        return full.isEmpty() ? user.getUsername() : full;
     }
 }
