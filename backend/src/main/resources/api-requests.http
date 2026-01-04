@@ -1,4 +1,29 @@
 ### ========================================
+### AUTHENTIFIZIERUNG
+### ========================================
+
+### 1. Erfolgreicher Login als Admin, um einen Token zu erhalten
+# @name loginRequest
+POST http://localhost:8080/api/auth/login
+    Content-Type: application/json
+
+    {
+      "username": "admin",
+      "password": "adminpassword"
+    }
+> {%
+    client.global.set("jwt_token", response.body.token);
+%}
+
+
+### ========================================
+### GESCHÜTZTE ENDPUNKTE (JETZT MIT TOKEN)
+### ========================================
+
+    ### 2. Alle Tasks abrufen (MIT Authentifizierungs-Token)
+ GET http://localhost:8080/api/tasks
+    Authorization: Bearer {{jwt_token}}
+### ========================================
 ### Task & TaskStep Endpunkte
 ### ========================================
 

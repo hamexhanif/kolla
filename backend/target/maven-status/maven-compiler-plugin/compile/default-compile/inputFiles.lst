@@ -21,6 +21,7 @@ C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\protot
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\security\AuthServiceImpl.java
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\task\TaskService.java
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\workflow\definition\WorkflowDefinitionService.java
+C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\security\AppAuthenticationProvider.java
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\security\SecurityConfig.java
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\tenant\TenantRepository.java
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\taskstep\TaskStep.java
@@ -30,6 +31,7 @@ C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\protot
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\role\RoleService.java
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\taskstep\PriorityServiceImpl.java
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\tenant\TenantService.java
+C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\security\JwtService.java
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\dto\TaskResponseDto.java
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\task\TaskController.java
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\role\RoleController.java
@@ -39,6 +41,7 @@ C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\protot
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\dto\CreateTaskRequestDto.java
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\taskstep\TaskStepStatus.java
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\workflow\definition\WorkflowDefinition.java
+C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\security\JwtAuthFilter.java
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\security\H2ConsoleConfiguration.java
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\workflow\definition\WorkflowDefinitionRepository.java
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\dto\ManualPriorityRequestDto.java
@@ -56,3 +59,4 @@ C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\protot
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\config\WebSocketConfig.java
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\task\Task.java
 C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\user\UserController.java
+C:\Users\Merveilles Mbiami\Projekt_SAQS\kolla\backend\src\main\java\team5\prototype\security\UserDetailsServiceImpl.java
