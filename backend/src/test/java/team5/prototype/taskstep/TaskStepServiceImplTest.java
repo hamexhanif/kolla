@@ -8,6 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import team5.prototype.dto.ActorDashboardItemDto;
+import team5.prototype.notification.NotificationService;
 import team5.prototype.task.Task;
 import team5.prototype.task.TaskStatus;
 import team5.prototype.task.TaskService;
@@ -33,6 +34,8 @@ class TaskStepServiceImplTest {
     private UserRepository userRepository;
     @Mock
     private TaskService taskService;
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private TaskStepServiceImpl taskStepService;
@@ -42,8 +45,21 @@ class TaskStepServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        Task task = Task.builder()
+                .id(42L)
+                .title("Test Task")
+                .deadline(LocalDateTime.now().plusDays(1))
+                .status(TaskStatus.NOT_STARTED)
+                .build();
+        WorkflowStep workflowStep = WorkflowStep.builder()
+                .id(7L)
+                .name("Review")
+                .sequenceOrder(1)
+                .build();
         taskStep = TaskStep.builder()
                 .id(1L)
+                .task(task)
+                .workflowStep(workflowStep)
                 .status(TaskStepStatus.WAITING)
                 .priority(Priority.MEDIUM_TERM)
                 .build();
