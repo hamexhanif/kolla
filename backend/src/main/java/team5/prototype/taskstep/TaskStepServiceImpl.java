@@ -8,6 +8,7 @@ import team5.prototype.notification.NotificationService;
 import team5.prototype.task.TaskService;
 import team5.prototype.user.User;
 import team5.prototype.user.UserRepository;
+import org.springframework.context.annotation.Lazy;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,7 +26,7 @@ public class TaskStepServiceImpl implements TaskStepService {
 
     public TaskStepServiceImpl(TaskStepRepository taskStepRepository,
                                UserRepository userRepository,
-                               TaskService taskService, NotificationService notificationService) {
+                               @Lazy TaskService taskService, NotificationService notificationService) {
         this.taskStepRepository = taskStepRepository;
         this.userRepository = userRepository;
         this.taskService = taskService;
