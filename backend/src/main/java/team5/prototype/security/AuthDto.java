@@ -11,6 +11,7 @@ public class AuthDto {
 
     // Felder für die Login-Anfrage (Request)
     private String username;
+    private String email;
     private String password;
 
     // Feld für die Login-Antwort (Response)

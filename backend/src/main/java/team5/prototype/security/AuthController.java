@@ -37,7 +37,7 @@ public class AuthController {
         // Wir übergeben die Authentifizierung an den AuthenticationManager von Spring
         // ===================================================================
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(authDto.getUsername(), authDto.getPassword())
+                new UsernamePasswordAuthenticationToken(authDto.getEmail(), authDto.getPassword())
         );
 
         // Wenn die Zeile oben keinen Fehler wirft, war die Authentifizierung erfolgreich.
