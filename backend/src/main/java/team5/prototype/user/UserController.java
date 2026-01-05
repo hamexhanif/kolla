@@ -1,22 +1,23 @@
 package team5.prototype.user;
 
-// --- HIER KOMMEN DIE WICHTIGEN IMPORTS ---
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 import team5.prototype.dto.CreateUserRequestDto;
+import team5.prototype.taskstep.TaskStepDto;
 import team5.prototype.taskstep.TaskStepService;
+import team5.prototype.taskstep.TaskStepQueryService;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
     private final UserService userService;
-    private final TaskStepService taskStepService;
-    public UserController(UserService userService, TaskStepService taskStepService) {
+    private final TaskStepQueryService taskStepQueryService;;
+    public UserController(UserService userService, TaskStepQueryService taskStepQueryService) {
         this.userService = userService;
-        this.taskStepService = taskStepService;
+        this.taskStepQueryService = taskStepQueryService;
     }
 
     // Hilfsmethode, um ein User-Objekt in ein UserDto umzuwandeln
@@ -27,6 +28,11 @@ public class UserController {
         dto.setUsername(user.getUsername());
         dto.setEmail(user.getEmail());
         return dto;
+    }
+
+    @GetMapping("/{userId}/tasks")
+    public List<TaskStepDto> getMyTasks(@PathVariable Long userId) {
+        return taskStepQueryService.getActiveTaskStepsForUserAsDto(userId);
     }
 
     // ENDPUNKT: GET /api/users - Ruft alle Benutzer ab
