@@ -6,6 +6,7 @@ team5\prototype\user\User$UserBuilder.class
 team5\prototype\tenant\TenantServiceImpl.class
 team5\prototype\task\TaskRepository.class
 team5\prototype\workflow\step\WorkflowStep.class
+team5\prototype\dto\TaskDetailsStepDto.class
 team5\prototype\taskstep\TaskStepServiceImpl.class
 team5\prototype\dto\TaskStepDto.class
 team5\prototype\taskstep\PriorityServiceImpl.class
@@ -28,6 +29,7 @@ team5\prototype\user\UserServiceImpl.class
 team5\prototype\workflow\definition\WorkflowDefinitionRepository.class
 team5\prototype\user\UserRepository.class
 team5\prototype\user\UserController.class
+team5\prototype\dto\TaskDetailsDto.class
 team5\prototype\notification\NotificationServiceImpl.class
 team5\prototype\task\TaskStatus.class
 team5\prototype\security\SecurityConfig.class
@@ -48,7 +50,9 @@ team5\prototype\role\RoleRepository.class
 team5\prototype\task\Task$TaskBuilder.class
 team5\prototype\taskstep\PriorityService.class
 team5\prototype\taskstep\TaskStepRepository.class
+team5\prototype\dto\CreateUserRequestDto.class
 team5\prototype\init\DataSeeder.class
+team5\prototype\dto\ManagerTaskRowDto.class
 team5\prototype\user\User.class
 team5\prototype\security\AuthController.class
 team5\prototype\security\AuthService.class
@@ -58,6 +62,7 @@ team5\prototype\dto\CreateTaskRequestDto.class
 team5\prototype\task\TaskCreationRequest.class
 team5\prototype\task\TaskController.class
 team5\prototype\role\RoleServiceImpl.class
+team5\prototype\dto\ManagerDashboardDto.class
 team5\prototype\task\Task.class
 team5\prototype\tenant\TenantRepository.class
 team5\prototype\user\UserService.class

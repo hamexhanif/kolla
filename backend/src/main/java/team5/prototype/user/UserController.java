@@ -5,15 +5,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
+import team5.prototype.dto.CreateUserRequestDto;
+import team5.prototype.taskstep.TaskStepService;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
     private final UserService userService;
-
-    public UserController(UserService userService) {
+    private final TaskStepService taskStepService;
+    public UserController(UserService userService, TaskStepService taskStepService) {
         this.userService = userService;
+        this.taskStepService = taskStepService;
     }
 
     // Hilfsmethode, um ein User-Objekt in ein UserDto umzuwandeln
@@ -44,8 +47,8 @@ public class UserController {
 
     // ENDPUNKT: POST /api/users - Erstellt einen neuen Benutzer
     @PostMapping
-    public UserDto createUser(@RequestBody User user) {
-        User createdUser = userService.createUser(user);
+    public UserDto createUser(@RequestBody CreateUserRequestDto requestDto) { // PARAMETER GEÄNDERT
+        User createdUser = userService.createUser(requestDto); // AUFRUF GEÄNDERT
         return convertToDto(createdUser);
     }
 
@@ -62,4 +65,5 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
+
 }
