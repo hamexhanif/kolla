@@ -39,3 +39,34 @@ Content-Type: application/json
 {
   "manualPriority": 1
 }
+
+### ========================================
+### User Endpunkte
+### ========================================
+
+### Erstellt einen neuen Benutzer
+POST http://localhost:8080/api/users
+Content-Type: application/json
+
+{
+  "username": "neuer_benutzer",
+  "email": "neu@test.com",
+  "password": "geheimesPasswort123",
+  "firstName": "Neu",
+  "lastName": "Benutzer",
+  "tenantId": 1
+}
+
+### Ruft alle Benutzer ab (zur Überprüfung)
+GET http://localhost:8080/api/users
+
+### ========================================
+### Workflow Manager Endpunkte
+### ========================================
+
+### Ruft die aktive Aufgabenliste eines spezifischen Benutzers ab
+# (Für den Workflow-Manager)
+#
+# Wir wissen aus dem DataSeeder, dass der "developer" die ID 2 hat
+# und ihm der erste Schritt des Tasks zugewiesen ist.
+GET http://localhost:8080/api/users/2/tasks

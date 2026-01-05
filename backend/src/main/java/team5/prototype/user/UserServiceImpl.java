@@ -1,6 +1,11 @@
 package team5.prototype.user;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import team5.prototype.dto.CreateUserRequestDto;
+import team5.prototype.tenant.Tenant;
+import team5.prototype.tenant.TenantRepository;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -8,68 +13,68 @@ import java.util.Optional;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final TenantRepository tenantRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    // Konstruktor-Injection: Spring liefert uns automatisch das UserRepository
-    public UserServiceImpl(UserRepository userRepository) {
+    // Konstruktor wurde angepasst, um die neuen Abhängigkeiten zu erhalten
+    public UserServiceImpl(UserRepository userRepository,
+                           TenantRepository tenantRepository,
+                           PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.tenantRepository = tenantRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    // --- HIER BEGINNT DIE IMPLEMENTIERUNG DER TO-DO-LISTE ---
+    // ===================================================================
+    // KORREKTUR: Die createUser-Methode wurde angepasst, um das DTO zu akzeptieren
+    // und dem UserService-Interface zu entsprechen.
+    // ===================================================================
+    @Override
+    public User createUser(CreateUserRequestDto requestDto) {
+        // 1. Lade den Tenant aus der Datenbank
+        Tenant tenant = tenantRepository.findById(requestDto.getTenantId())
+                .orElseThrow(() -> new RuntimeException("Tenant mit ID " + requestDto.getTenantId() + " nicht gefunden"));
 
-    /**
-     * Erstellt einen neuen Benutzer und speichert ihn in der Datenbank.
-     * @param user Das zu erstellende User-Objekt.
-     * @return Der gespeicherte User (inklusive der generierten ID).
-     */
-    public User createUser(User user) {
-        // Später könnten hier Validierungen hinzugefügt werden (z.B. Passwortstärke prüfen)
-        return userRepository.save(user);
+        // 2. Erstelle eine neue User-Entity aus dem DTO
+        User newUser = User.builder()
+                .username(requestDto.getUsername())
+                .email(requestDto.getEmail())
+                .passwordHash(passwordEncoder.encode(requestDto.getPassword())) // Passwort wird sicher gehasht
+                .firstName(requestDto.getFirstName())
+                .lastName(requestDto.getLastName())
+                .tenant(tenant)
+                .active(true)
+                .build();
+
+        // 3. Speichere den neuen User und gib ihn zurück
+        return userRepository.save(newUser);
     }
 
-    /**
-     * Ruft alle Benutzer aus der Datenbank ab.
-     * @return Eine Liste aller User-Objekte.
-     */
+    // --- Die anderen Methoden bleiben größtenteils unverändert ---
+
+    @Override
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
-    /**
-     * Ruft einen einzelnen Benutzer anhand seiner ID ab.
-     * @param userId Die ID des zu suchenden Benutzers.
-     * @return Ein Optional, das den Benutzer enthält, falls er gefunden wurde.
-     */
+    @Override
     public Optional<User> getUserById(Long userId) {
         return userRepository.findById(userId);
     }
 
-    /**
-     * Aktualisiert die Daten eines bestehenden Benutzers.
-     * @param userId Die ID des zu aktualisierenden Benutzers.
-     * @param userDetails Ein User-Objekt mit den neuen Daten.
-     * @return Der aktualisierte und gespeicherte User.
-     */
+    @Override
     public User updateUser(Long userId, User userDetails) {
-        // Finde den existierenden Benutzer oder wirf eine Ausnahme
         return userRepository.findById(userId)
                 .map(existingUser -> {
-                    // Aktualisiere nur die Felder, die geändert werden dürfen
                     existingUser.setUsername(userDetails.getUsername());
                     existingUser.setEmail(userDetails.getEmail());
-                    // Das Passwort sollte über eine separate Methode geändert werden
-                    // existingUser.setRoles(userDetails.getRoles()); // Falls die Rollen auch änderbar sein sollen
-
                     return userRepository.save(existingUser);
                 })
                 .orElseThrow(() -> new RuntimeException("Benutzer mit ID " + userId + " nicht gefunden!"));
     }
 
-    /**
-     * Löscht einen Benutzer anhand seiner ID.
-     * @param userId Die ID des zu löschenden Benutzers.
-     */
+    @Override
     public void deleteUser(Long userId) {
-        // Prüfen, ob der Benutzer existiert, bevor versucht wird, ihn zu löschen
         if (!userRepository.existsById(userId)) {
             throw new RuntimeException("Benutzer mit ID " + userId + " nicht gefunden!");
         }
