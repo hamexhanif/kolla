@@ -1,52 +1,83 @@
-### ========================================
-### Task & TaskStep Endpunkte
-### ========================================
+### ===================================================================
+### AUTHENTIFIZIERUNG (Momentan deaktiviert, für später vorbereitet)
+### ===================================================================
 
-### Test 1: Alle Tasks abrufen (um die IDs zu sehen)
-# Dieser Request ruft die Liste aller Tasks ab.
-# Schau dir die Antwort an, um die ID des Tasks und seiner Schritte zu finden.
-GET http://localhost:8080/api/tasks
-
-
-### Test 2: Einen Arbeitsschritt abschließen
-# WICHTIG: Ersetze die IDs unten mit den echten IDs aus der Antwort von "Test 1"
-#
-# URL-Parameter:
-#   - {stepId}: Ersetze '1' mit der ID des ersten Task-Schrittes (der mit Status "ASSIGNED").
-#
-# Body-Parameter:
-#   - "userId": Ersetze '2' mit der ID des Benutzers, dem der Schritt zugewiesen ist (der "developer"). In unserem DataSeeder hat er die ID 2.
-#   - "taskId": Ersetze '1' mit der ID des Tasks, zu dem der Schritt gehört.
-POST http://localhost:8080/api/task-steps/1/complete
+### 1. Login (gibt 403 zurück, bis Hanif es repariert)
+# @name loginRequest
+POST http://localhost:8080/api/auth/login
 Content-Type: application/json
 
 {
-  "userId": 2,
-  "taskId": 1
+  "email": "merveilles@gmail.com",
+  "password": "password123"
+}
+
+> {%
+    client.global.set("jwt_token", response.body.token);
+%}
+
+### ===================================================================
+### AKTEUR / USER DASHBOARD ENDPUNKTE
+### ===================================================================
+
+### Ruft die zusammengefassten Dashboard-Daten für einen Benutzer ab
+#   - Benötigt für die Kacheln "Open Tasks", "Due Today", etc. im Akteur-Dashboard.
+#   - Wir testen wieder mit Benutzer "developer" (ID = 2).
+GET http://localhost:8080/api/users/dashboard-tasks/2
+# Authorization: Bearer {{jwt_token}} // Später einkommentieren
+
+
+### ===================================================================
+### WORKFLOW MANAGER DASHBOARD ENDPUNKTE
+### ===================================================================
+
+### Ruft die zusammengefassten Dashboard-Daten für den Manager ab
+#   - Benötigt für die Kacheln "Open Tasks", "Overdue", etc. im Manager-Dashboard.
+GET http://localhost:8080/api/manager/dashboard
+# Authorization: Bearer {{jwt_token}} // Später einkommentieren
+
+
+### Ruft die vollständige Task-Liste für das Manager-Dashboard ab
+#   - Benötigt für die Tabelle mit allen Tasks.
+GET http://localhost:8080/api/tasks
+# Authorization: Bearer {{jwt_token}} // Später einkommentieren
+
+
+### ===================================================================
+### AKTIONEN (Aufgaben bearbeiten)
+### ===================================================================
+
+### Aktion 1: Einen Arbeitsschritt abschließen
+#   - Simuliert, dass der "developer" (userId: 2) den ersten Schritt (stepId: 1) des ersten Tasks (taskId: 1) abschließt.
+POST http://localhost:8080/api/task-steps/1/complete
+Content-Type: application/json
+# Authorization: Bearer {{jwt_token}} // Später einkommentieren
+
+{
+  "taskId": 1,
+  "userId": 2
 }
 
 
-### Test 3: Überprüfe das Ergebnis
-# Rufe die Liste der Tasks erneut ab.
-# Du wirst in der Antwort sehen, dass der erste Schritt jetzt den Status "COMPLETED"
-# und der zweite Schritt den Status "ASSIGNED" hat. Der "currentStepIndex" des Tasks wird auf 1 stehen.
-GET http://localhost:8080/api/tasks
-
-### Setze die Priorität für Schritt 2 manuell auf "sofort" (1)
+### Aktion 2: Manuelle Priorität für einen Schritt setzen
+#   - Simuliert, dass ein Manager die Priorität von Schritt 2 auf "sofort" (1) setzt.
 POST http://localhost:8080/api/task-steps/2/set-priority
 Content-Type: application/json
+# Authorization: Bearer {{jwt_token}} // Später einkommentieren
 
 {
   "manualPriority": 1
 }
 
-### ========================================
-### User Endpunkte
-### ========================================
+
+### ===================================================================
+### VERWALTUNGS-ENDPUNKTE (User, Roles etc.)
+### ===================================================================
 
 ### Erstellt einen neuen Benutzer
 POST http://localhost:8080/api/users
 Content-Type: application/json
+# Authorization: Bearer {{jwt_token}} // Später einkommentieren
 
 {
   "username": "neuer_benutzer",
@@ -57,16 +88,22 @@ Content-Type: application/json
   "tenantId": 1
 }
 
-### Ruft alle Benutzer ab (zur Überprüfung)
+### Ruft alle Benutzer ab
 GET http://localhost:8080/api/users
 
-### ========================================
-### Workflow Manager Endpunkte
-### ========================================
+# Authorization: Bearer {{jwt_token}} // Später einkommentieren
+### Ruft einen einzelnen Benutzer ab (ID 4, den wir erstellt haben)
+GET http://localhost:8080/api/users/4
 
-### Ruft die aktive Aufgabenliste eines spezifischen Benutzers ab
-# (Für den Workflow-Manager)
-#
-# Wir wissen aus dem DataSeeder, dass der "developer" die ID 2 hat
-# und ihm der erste Schritt des Tasks zugewiesen ist.
-GET http://localhost:8080/api/users/2/tasks
+### Aktualisiert einen Benutzer (ID 4)
+PUT http://localhost:8080/api/users/4
+Content-Type: application/json
+
+{
+  "username": "aktualisierter_benutzer",
+  "email": "neu_updated@test.com"
+}
+
+
+### Löscht einen Benutzer (ID 4)
+DELETE http://localhost:8080/api/users/4
