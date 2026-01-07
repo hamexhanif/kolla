@@ -2,7 +2,6 @@ package team5.prototype.task;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import team5.prototype.dto.ManagerDashboardDto;
 import team5.prototype.dto.TaskDetailsDto;
 
 import java.util.List;
@@ -48,11 +47,6 @@ public class TaskController {
     public ResponseEntity<TaskDetailsDto> getTaskDetails(@PathVariable Long id) {
         TaskDetailsDto details = taskService.getTaskDetails(id);
         return ResponseEntity.ok(details);
-    }
-
-    @GetMapping("/manager-dashboard")
-    public ResponseEntity<ManagerDashboardDto> getManagerDashboard() {
-        return ResponseEntity.ok(taskService.getManagerDashboard());
     }
 
     // Diese Methode nur noch fuer createTask verwendet
