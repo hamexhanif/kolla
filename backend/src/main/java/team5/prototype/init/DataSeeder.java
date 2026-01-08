@@ -1,5 +1,3 @@
-// VOLLSTÄNDIGER, FINALER CODE FÜR DataSeeder.java MIT LOGGING
-
 package team5.prototype.init;
 
 import org.slf4j.Logger;
@@ -111,4 +109,5 @@ public class DataSeeder implements CommandLineRunner {
         logger.info("Workflow-Vorlagen: {}", workflowDefinitionRepository.count());
         logger.info("-----------------------------------------");
     }
+
 }

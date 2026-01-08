@@ -8,6 +8,7 @@ import team5.prototype.dto.ManagerTaskRowDto;
 import team5.prototype.dto.TaskDetailsDto;
 import team5.prototype.dto.TaskDetailsStepDto;
 import team5.prototype.notification.NotificationService;
+import team5.prototype.role.Role;
 import team5.prototype.taskstep.Priority;
 import team5.prototype.taskstep.PriorityService;
 import team5.prototype.taskstep.TaskStep;
@@ -92,7 +93,6 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional
     public void completeStep(Long taskId, Long stepId, Long userId) {
-        // --- DEIN BESTEHENDER, KORREKTER CODE (unveraendert) ---
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new EntityNotFoundException("Task %d nicht gefunden".formatted(taskId)));
 
@@ -104,6 +104,19 @@ public class TaskServiceImpl implements TaskService {
 
         if (!Objects.equals(step.getAssignedUser().getId(), userId)) {
             throw new IllegalArgumentException("Benutzer %d ist nicht dem Arbeitsschritt zugeordnet".formatted(userId));
+        }
+        // ===================================================================
+        // 2. NEUE PRÜFUNG: Hat der zugewiesene Benutzer die erforderliche Rolle?
+        // ===================================================================
+        Role requiredRole = step.getWorkflowStep().getRequiredRole();
+        boolean userHasRequiredRole = step.getAssignedUser().getRoles().stream()
+                .anyMatch(userRole -> userRole.getId().equals(requiredRole.getId()));
+
+        if (!userHasRequiredRole) {
+            throw new IllegalStateException(String.format(
+                    "Benutzer %d hat nicht die erforderliche Rolle '%s' für diesen Arbeitsschritt.",
+                    userId, requiredRole.getName()
+            ));
         }
         if (step.getStatus() == TaskStepStatus.COMPLETED) {
             return; // Bereits erledigt, nichts zu tun.
