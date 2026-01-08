@@ -36,10 +36,10 @@ class AuthControllerTest {
     @Test
     void loginReturnsTokenWhenValid() throws Exception {
         AuthDto request = new AuthDto();
-        request.setUsername("user");
+        request.setEmail("user@example.com");
         request.setPassword("pass");
 
-        when(authService.login("user", "pass", null)).thenReturn("token-123");
+        when(authService.login("user@example.com", "pass", null)).thenReturn("token-123");
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -51,10 +51,10 @@ class AuthControllerTest {
     @Test
     void loginReturnsUnauthorizedWhenInvalid() throws Exception {
         AuthDto request = new AuthDto();
-        request.setUsername("user");
+        request.setEmail("user@example.com");
         request.setPassword("bad");
 
-        when(authService.login("user", "bad", null)).thenReturn(null);
+        when(authService.login("user@example.com", "bad", null)).thenReturn(null);
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

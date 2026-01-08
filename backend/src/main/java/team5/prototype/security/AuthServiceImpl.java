@@ -58,11 +58,18 @@ public class AuthServiceImpl implements AuthService {
                 });
     }
 
-    private java.util.Optional<User> resolveUser(String username, Long tenantId) {
+    private java.util.Optional<User> resolveUser(String identifier, Long tenantId) {
+        boolean isEmail = identifier != null && identifier.contains("@");
         if (tenantId != null) {
-            return userRepository.findByUsernameAndTenant_Id(username, tenantId);
+            if (isEmail) {
+                return userRepository.findByEmailAndTenant_Id(identifier, tenantId);
+            }
+            return userRepository.findByUsernameAndTenant_Id(identifier, tenantId);
         }
-        return userRepository.findByUsername(username);
+        if (isEmail) {
+            return userRepository.findByEmail(identifier);
+        }
+        return userRepository.findByUsername(identifier);
     }
 
     private String createToken(User user) {

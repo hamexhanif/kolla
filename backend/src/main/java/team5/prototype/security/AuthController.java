@@ -18,7 +18,11 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthDto> login(@RequestBody AuthDto authDto) { // Verwendet jetzt AuthDto
-        String token = authService.login(authDto.getUsername(), authDto.getPassword(), authDto.getTenantId());
+        String identifier = authDto.getEmail();
+        if (identifier == null || identifier.isBlank()) {
+            identifier = authDto.getUsername();
+        }
+        String token = authService.login(identifier, authDto.getPassword(), authDto.getTenantId());
         if (token != null) {
             return ResponseEntity.ok(new AuthDto(token));
         } else {

@@ -33,13 +33,14 @@ class AuthServiceImplTest {
         Role role = Role.builder().name("ADMIN").build();
         User user = User.builder()
                 .username("user")
+                .email("user@example.com")
                 .passwordHash(hashed)
                 .roles(Set.of(role))
                 .build();
 
-        when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
 
-        String token = authService.login("user", "pass");
+        String token = authService.login("user@example.com", "pass");
 
         assertThat(token).isNotNull();
         SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
@@ -58,12 +59,13 @@ class AuthServiceImplTest {
 
         User user = User.builder()
                 .username("user")
+                .email("user@example.com")
                 .passwordHash(hashed)
                 .build();
 
-        when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
 
-        String token = authService.login("user", "wrong");
+        String token = authService.login("user@example.com", "wrong");
 
         assertThat(token).isNull();
     }
@@ -73,9 +75,9 @@ class AuthServiceImplTest {
         UserRepository userRepository = Mockito.mock(UserRepository.class);
         AuthServiceImpl authService = new AuthServiceImpl(userRepository, SECRET);
 
-        when(userRepository.findByUsername("user")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.empty());
 
-        String token = authService.login("user", "pass");
+        String token = authService.login("user@example.com", "pass");
 
         assertThat(token).isNull();
     }
@@ -89,13 +91,14 @@ class AuthServiceImplTest {
         Tenant tenant = Tenant.builder().id(9L).name("t9").build();
         User user = User.builder()
                 .username("user")
+                .email("user@example.com")
                 .passwordHash(hashed)
                 .tenant(tenant)
                 .build();
 
-        when(userRepository.findByUsernameAndTenant_Id("user", 9L)).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailAndTenant_Id("user@example.com", 9L)).thenReturn(Optional.of(user));
 
-        String token = authService.login("user", "pass", 9L);
+        String token = authService.login("user@example.com", "pass", 9L);
 
         assertThat(token).isNotNull();
         SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
