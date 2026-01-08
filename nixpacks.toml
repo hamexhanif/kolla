@@ -1,0 +1,13 @@
+[phases.setup]
+nixPkgs = ["maven", "jdk21"]
+
+[phases.build]
+cmds = [
+  "cd backend",
+  "chmod +x ./mvnw || true",
+  "./mvnw clean package -DskipTests"
+]
+
+[start]
+cmd = "cd backend && java -jar target/prototype-0.0.1-SNAPSHOT.jar"
+

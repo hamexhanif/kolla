@@ -2,10 +2,10 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "cd backend && chmod +x ./mvnw && ./mvnw clean package -DskipTests"
+    "buildCommand": "./build.sh"
   },
   "deploy": {
-    "startCommand": "./start.sh",
+    "startCommand": "cd backend && java -jar target/prototype-0.0.1-SNAPSHOT.jar",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
