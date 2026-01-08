@@ -1,4 +1,21 @@
 ### ========================================
+### Auth
+### ========================================
+
+### Login (Username + Password)
+# Optional: tenantId kann mitgesendet werden, ist aber nicht erforderlich.
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "adminpassword"
+}
+
+### Kopiere den token aus der Antwort und setze ihn in die Requests unten:
+# Authorization: Bearer <TOKEN>
+
+### ========================================
 ### Task & TaskStep Endpunkte
 ### ========================================
 
@@ -6,6 +23,7 @@
 # Dieser Request ruft die Liste aller Tasks ab.
 # Schau dir die Antwort an, um die ID des Tasks und seiner Schritte zu finden.
 GET http://localhost:8080/api/tasks
+Authorization: Bearer <TOKEN>
 
 
 ### Test 2: Einen Arbeitsschritt abschließen
@@ -19,6 +37,7 @@ GET http://localhost:8080/api/tasks
 #   - "taskId": Ersetze '1' mit der ID des Tasks, zu dem der Schritt gehört.
 POST http://localhost:8080/api/task-steps/1/complete
 Content-Type: application/json
+Authorization: Bearer <TOKEN>
 
 {
   "userId": 2,
@@ -31,10 +50,12 @@ Content-Type: application/json
 # Du wirst in der Antwort sehen, dass der erste Schritt jetzt den Status "COMPLETED"
 # und der zweite Schritt den Status "ASSIGNED" hat. Der "currentStepIndex" des Tasks wird auf 1 stehen.
 GET http://localhost:8080/api/tasks
+Authorization: Bearer <TOKEN>
 
 ### Setze die Priorität für Schritt 2 manuell auf "sofort" (1)
 POST http://localhost:8080/api/task-steps/2/set-priority
 Content-Type: application/json
+Authorization: Bearer <TOKEN>
 
 {
   "manualPriority": 1

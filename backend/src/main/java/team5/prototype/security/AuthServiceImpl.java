@@ -32,8 +32,13 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public String login(String username, String password) {
+        return login(username, password, null);
+    }
+
+    @Override
+    public String login(String username, String password, Long tenantId) {
         // 1. Finde den Benutzer in der Datenbank anhand seines Benutzernamens.
-        return userRepository.findByUsername(username)
+        return resolveUser(username, tenantId)
                 .map(user -> {
                     // 2. Benutzer gefunden. Überprüfe jetzt das Passwort.
                     // passwordEncoder.matches() vergleicht das eingegebene Klartext-Passwort
@@ -55,6 +60,13 @@ public class AuthServiceImpl implements AuthService {
                 });
     }
 
+    private java.util.Optional<User> resolveUser(String username, Long tenantId) {
+        if (tenantId != null) {
+            return userRepository.findByUsernameAndTenant_Id(username, tenantId);
+        }
+        return userRepository.findByUsername(username);
+    }
+
     private String createToken(User user) {
         long nowMillis = System.currentTimeMillis();
         Date now = new Date(nowMillis);
@@ -66,12 +78,17 @@ public class AuthServiceImpl implements AuthService {
                 .map(Role::getName)
                 .collect(Collectors.toList());
 
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .setSubject(user.getUsername())
                 .claim("roles", roleNames) // Fügt die Liste der Rollen-Namen zum Token hinzu
                 .setIssuedAt(now)
                 .setExpiration(exp)
-                .signWith(jwtSecretKey, SignatureAlgorithm.HS512)
-                .compact();
+                .signWith(jwtSecretKey, SignatureAlgorithm.HS512);
+
+        if (user.getTenant() != null) {
+            builder.claim("tenantId", user.getTenant().getId());
+        }
+
+        return builder.compact();
     }
 }

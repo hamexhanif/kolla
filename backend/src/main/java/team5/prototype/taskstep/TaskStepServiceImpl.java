@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team5.prototype.dto.ActorDashboardItemDto;
 import team5.prototype.notification.NotificationService;
+import team5.prototype.security.TenantProvider;
 import team5.prototype.task.TaskService;
 import team5.prototype.user.User;
 import team5.prototype.user.UserRepository;
@@ -22,21 +23,26 @@ public class TaskStepServiceImpl implements TaskStepService {
     private final UserRepository userRepository;
     private final TaskService taskService;
     private final NotificationService notificationService;
+    private final TenantProvider tenantProvider;
 
     public TaskStepServiceImpl(TaskStepRepository taskStepRepository,
                                UserRepository userRepository,
-                               TaskService taskService, NotificationService notificationService) {
+                               TaskService taskService,
+                               NotificationService notificationService,
+                               TenantProvider tenantProvider) {
         this.taskStepRepository = taskStepRepository;
         this.userRepository = userRepository;
         this.taskService = taskService;
         this.notificationService = notificationService;
+        this.tenantProvider = tenantProvider;
     }
 
     @Override
     @Transactional
     public TaskStep assignTaskStepToUser(Long taskStepId, Long userId) {
-        TaskStep step = findTaskStep(taskStepId);
-        User user = findUser(userId);
+        Long tenantId = tenantProvider.getCurrentTenantId();
+        TaskStep step = findTaskStep(taskStepId, tenantId);
+        User user = findUser(userId, tenantId);
         step.setAssignedUser(user);
         step.setStatus(TaskStepStatus.ASSIGNED);
         if (step.getAssignedAt() == null) {
@@ -48,7 +54,7 @@ public class TaskStepServiceImpl implements TaskStepService {
     @Override
     @Transactional
     public TaskStep setManualPriority(Long taskStepId, int manualPriority) {
-        TaskStep step = findTaskStep(taskStepId);
+        TaskStep step = findTaskStep(taskStepId, tenantProvider.getCurrentTenantId());
         step.setManualPriority(manualPriority);
         step.setPriority(mapManualPriority(manualPriority));
         TaskStep savedStep = taskStepRepository.save(step);
@@ -70,7 +76,10 @@ public class TaskStepServiceImpl implements TaskStepService {
     @Override
     @Transactional(readOnly = true)
     public List<TaskStep> getActiveTaskStepsByUser(Long userId) {
-        return taskStepRepository.findByAssignedUserIdAndStatusNot(userId, TaskStepStatus.COMPLETED);
+        Long tenantId = tenantProvider.getCurrentTenantId();
+        findUser(userId, tenantId);
+        return taskStepRepository.findByAssignedUserIdAndStatusNotAndTask_Tenant_Id(
+                userId, TaskStepStatus.COMPLETED, tenantId);
     }
 
     @Override
@@ -79,8 +88,10 @@ public class TaskStepServiceImpl implements TaskStepService {
                                                               TaskStepStatus status,
                                                               Priority priority,
                                                               String query) {
+        Long tenantId = tenantProvider.getCurrentTenantId();
+        findUser(userId, tenantId);
         Stream<TaskStep> steps = taskStepRepository
-                .findByAssignedUserIdAndStatusNot(userId, TaskStepStatus.COMPLETED)
+                .findByAssignedUserIdAndStatusNotAndTask_Tenant_Id(userId, TaskStepStatus.COMPLETED, tenantId)
                 .stream();
         if (status != null) {
             steps = steps.filter(step -> step.getStatus() == status);
@@ -102,13 +113,13 @@ public class TaskStepServiceImpl implements TaskStepService {
         taskService.completeStep(taskId, taskStepId, userId);
     }
 
-    private TaskStep findTaskStep(Long id) {
-        return taskStepRepository.findById(id)
+    private TaskStep findTaskStep(Long id, Long tenantId) {
+        return taskStepRepository.findByIdAndTask_Tenant_Id(id, tenantId)
                 .orElseThrow(() -> new EntityNotFoundException("TaskStep %d nicht gefunden".formatted(id)));
     }
 
-    private User findUser(Long id) {
-        return userRepository.findById(id)
+    private User findUser(Long id, Long tenantId) {
+        return userRepository.findByIdAndTenant_Id(id, tenantId)
                 .orElseThrow(() -> new EntityNotFoundException("User %d nicht gefunden".formatted(id)));
     }
 

@@ -15,7 +15,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthDto> login(@RequestBody AuthDto authDto) { // Verwendet jetzt AuthDto
-        String token = authService.login(authDto.getUsername(), authDto.getPassword());
+        String token = authService.login(authDto.getUsername(), authDto.getPassword(), authDto.getTenantId());
         if (token != null) {
             // Erstellt ein neues AuthDto, das nur den Token enthält
             return ResponseEntity.ok(new AuthDto(token));

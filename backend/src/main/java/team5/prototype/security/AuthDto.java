@@ -12,6 +12,7 @@ public class AuthDto {
     // Felder für die Login-Anfrage (Request)
     private String username;
     private String password;
+    private Long tenantId;
 
     // Feld für die Login-Antwort (Response)
     private String token;

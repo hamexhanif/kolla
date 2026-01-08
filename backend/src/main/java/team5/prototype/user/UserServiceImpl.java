@@ -1,6 +1,10 @@
 package team5.prototype.user;
 
 import org.springframework.stereotype.Service;
+import team5.prototype.security.TenantProvider;
+import team5.prototype.tenant.Tenant;
+import team5.prototype.tenant.TenantRepository;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -8,10 +12,16 @@ import java.util.Optional;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final TenantRepository tenantRepository;
+    private final TenantProvider tenantProvider;
 
     // Konstruktor-Injection: Spring liefert uns automatisch das UserRepository
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository,
+                           TenantRepository tenantRepository,
+                           TenantProvider tenantProvider) {
         this.userRepository = userRepository;
+        this.tenantRepository = tenantRepository;
+        this.tenantProvider = tenantProvider;
     }
 
     // --- HIER BEGINNT DIE IMPLEMENTIERUNG DER TO-DO-LISTE ---
@@ -23,6 +33,10 @@ public class UserServiceImpl implements UserService {
      */
     public User createUser(User user) {
         // Später könnten hier Validierungen hinzugefügt werden (z.B. Passwortstärke prüfen)
+        Long tenantId = tenantProvider.getCurrentTenantId();
+        Tenant tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new RuntimeException("Tenant mit ID " + tenantId + " nicht gefunden!"));
+        user.setTenant(tenant);
         return userRepository.save(user);
     }
 
@@ -31,7 +45,7 @@ public class UserServiceImpl implements UserService {
      * @return Eine Liste aller User-Objekte.
      */
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        return userRepository.findAllByTenant_Id(tenantProvider.getCurrentTenantId());
     }
 
     /**
@@ -40,7 +54,7 @@ public class UserServiceImpl implements UserService {
      * @return Ein Optional, das den Benutzer enthält, falls er gefunden wurde.
      */
     public Optional<User> getUserById(Long userId) {
-        return userRepository.findById(userId);
+        return userRepository.findByIdAndTenant_Id(userId, tenantProvider.getCurrentTenantId());
     }
 
     /**
@@ -51,7 +65,7 @@ public class UserServiceImpl implements UserService {
      */
     public User updateUser(Long userId, User userDetails) {
         // Finde den existierenden Benutzer oder wirf eine Ausnahme
-        return userRepository.findById(userId)
+        return userRepository.findByIdAndTenant_Id(userId, tenantProvider.getCurrentTenantId())
                 .map(existingUser -> {
                     // Aktualisiere nur die Felder, die geändert werden dürfen
                     existingUser.setUsername(userDetails.getUsername());
@@ -70,7 +84,7 @@ public class UserServiceImpl implements UserService {
      */
     public void deleteUser(Long userId) {
         // Prüfen, ob der Benutzer existiert, bevor versucht wird, ihn zu löschen
-        if (!userRepository.existsById(userId)) {
+        if (!userRepository.existsByIdAndTenant_Id(userId, tenantProvider.getCurrentTenantId())) {
             throw new RuntimeException("Benutzer mit ID " + userId + " nicht gefunden!");
         }
         userRepository.deleteById(userId);
