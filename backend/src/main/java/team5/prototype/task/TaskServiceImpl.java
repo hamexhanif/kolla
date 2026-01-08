@@ -20,6 +20,7 @@ import team5.prototype.workflow.definition.WorkflowDefinition;
 import team5.prototype.workflow.definition.WorkflowDefinitionRepository;
 import team5.prototype.workflow.step.WorkflowStep;
 
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -108,6 +109,19 @@ public class TaskServiceImpl implements TaskService {
 
         if (!Objects.equals(step.getAssignedUser().getId(), userId)) {
             throw new IllegalArgumentException("Benutzer %d ist nicht dem Arbeitsschritt zugeordnet".formatted(userId));
+        }
+        // ===================================================================
+        // 2. NEUE PRÜFUNG: Hat der zugewiesene Benutzer die erforderliche Rolle?
+        // ===================================================================
+        Role requiredRole = step.getWorkflowStep().getRequiredRole();
+        boolean userHasRequiredRole = step.getAssignedUser().getRoles().stream()
+                .anyMatch(userRole -> userRole.getId().equals(requiredRole.getId()));
+
+        if (!userHasRequiredRole) {
+            throw new IllegalStateException(String.format(
+                    "Benutzer %d hat nicht die erforderliche Rolle '%s' für diesen Arbeitsschritt.",
+                    userId, requiredRole.getName()
+            ));
         }
         if (step.getStatus() == TaskStepStatus.COMPLETED) {
             return; // Bereits erledigt, nichts zu tun.
@@ -386,4 +400,5 @@ public class TaskServiceImpl implements TaskService {
         String full = (first + " " + last).trim();
         return full.isEmpty() ? user.getUsername() : full;
     }
+
 }

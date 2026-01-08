@@ -1,5 +1,3 @@
-// VOLLSTÄNDIGER, FINALER CODE FÜR DataSeeder.java MIT LOGGING
-
 package team5.prototype.init;
 
 import org.slf4j.Logger;

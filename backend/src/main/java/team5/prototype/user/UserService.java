@@ -2,13 +2,12 @@ package team5.prototype.user;
 
 import java.util.List;
 import java.util.Optional;
+import team5.prototype.dto.CreateUserRequestDto;
 
 public interface UserService {
 
     /**
      * Erstellt einen neuen Benutzer.
-     */
-    User createUser(User user);
 
     /**
      * Ruft alle Benutzer ab.
@@ -29,4 +28,5 @@ public interface UserService {
      * Löscht einen Benutzer.
      */
     void deleteUser(Long userId);
+    User createUser(CreateUserRequestDto requestDto);
 }

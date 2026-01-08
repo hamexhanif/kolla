@@ -1,5 +1,6 @@
 package team5.prototype.user;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import team5.prototype.security.TenantProvider;
 import team5.prototype.tenant.Tenant;
@@ -24,7 +25,26 @@ public class UserServiceImpl implements UserService {
         this.tenantProvider = tenantProvider;
     }
 
-    // --- HIER BEGINNT DIE IMPLEMENTIERUNG DER TO-DO-LISTE ---
+    // ===================================================================
+    // KORREKTUR: Die createUser-Methode wurde angepasst, um das DTO zu akzeptieren
+    // und dem UserService-Interface zu entsprechen.
+    // ===================================================================
+    @Override
+    public User createUser(CreateUserRequestDto requestDto) {
+        // 1. Lade den Tenant aus der Datenbank
+        Tenant tenant = tenantRepository.findById(requestDto.getTenantId())
+                .orElseThrow(() -> new RuntimeException("Tenant mit ID " + requestDto.getTenantId() + " nicht gefunden"));
+
+        // 2. Erstelle eine neue User-Entity aus dem DTO
+        User newUser = User.builder()
+                .username(requestDto.getUsername())
+                .email(requestDto.getEmail())
+                .passwordHash(passwordEncoder.encode(requestDto.getPassword())) // Passwort wird sicher gehasht
+                .firstName(requestDto.getFirstName())
+                .lastName(requestDto.getLastName())
+                .tenant(tenant)
+                .active(true)
+                .build();
 
     /**
      * Erstellt einen neuen Benutzer und speichert ihn in der Datenbank.
@@ -40,48 +60,31 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
-    /**
-     * Ruft alle Benutzer aus der Datenbank ab.
-     * @return Eine Liste aller User-Objekte.
-     */
+    // --- Die anderen Methoden bleiben größtenteils unverändert ---
+
+    @Override
     public List<User> getAllUsers() {
         return userRepository.findAllByTenant_Id(tenantProvider.getCurrentTenantId());
     }
 
-    /**
-     * Ruft einen einzelnen Benutzer anhand seiner ID ab.
-     * @param userId Die ID des zu suchenden Benutzers.
-     * @return Ein Optional, das den Benutzer enthält, falls er gefunden wurde.
-     */
+    @Override
     public Optional<User> getUserById(Long userId) {
         return userRepository.findByIdAndTenant_Id(userId, tenantProvider.getCurrentTenantId());
     }
 
-    /**
-     * Aktualisiert die Daten eines bestehenden Benutzers.
-     * @param userId Die ID des zu aktualisierenden Benutzers.
-     * @param userDetails Ein User-Objekt mit den neuen Daten.
-     * @return Der aktualisierte und gespeicherte User.
-     */
+    @Override
     public User updateUser(Long userId, User userDetails) {
         // Finde den existierenden Benutzer oder wirf eine Ausnahme
         return userRepository.findByIdAndTenant_Id(userId, tenantProvider.getCurrentTenantId())
                 .map(existingUser -> {
-                    // Aktualisiere nur die Felder, die geändert werden dürfen
                     existingUser.setUsername(userDetails.getUsername());
                     existingUser.setEmail(userDetails.getEmail());
-                    // Das Passwort sollte über eine separate Methode geändert werden
-                    // existingUser.setRoles(userDetails.getRoles()); // Falls die Rollen auch änderbar sein sollen
-
                     return userRepository.save(existingUser);
                 })
                 .orElseThrow(() -> new RuntimeException("Benutzer mit ID " + userId + " nicht gefunden!"));
     }
 
-    /**
-     * Löscht einen Benutzer anhand seiner ID.
-     * @param userId Die ID des zu löschenden Benutzers.
-     */
+    @Override
     public void deleteUser(Long userId) {
         // Prüfen, ob der Benutzer existiert, bevor versucht wird, ihn zu löschen
         if (!userRepository.existsByIdAndTenant_Id(userId, tenantProvider.getCurrentTenantId())) {

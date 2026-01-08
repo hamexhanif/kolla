@@ -3,6 +3,8 @@ package team5.prototype.security;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
 @Service
 public class AuthServiceImpl implements AuthService {
 
+    private static final Logger logger = LoggerFactory.getLogger(AuthServiceImpl.class);
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final SecretKey jwtSecretKey;
@@ -40,22 +43,17 @@ public class AuthServiceImpl implements AuthService {
         // 1. Finde den Benutzer in der Datenbank anhand seines Benutzernamens.
         return resolveUser(username, tenantId)
                 .map(user -> {
-                    // 2. Benutzer gefunden. Überprüfe jetzt das Passwort.
-                    // passwordEncoder.matches() vergleicht das eingegebene Klartext-Passwort
-                    // mit dem sicheren Hash, der in der Datenbank gespeichert ist.
+                    // 2. Benutzer gefunden. Überprüfe das Passwort.
                     if (passwordEncoder.matches(password, user.getPasswordHash())) {
-                        // 3. Passwort ist korrekt. Erstelle und gib einen JWT-Token zurück.
-                        System.out.println("Login erfolgreich für: " + username);
+                        logger.info("Login erfolgreich für: {}", email);
                         return createToken(user);
                     } else {
-                        // 4. Passwort ist falsch.
-                        System.out.println("Login-Fehler: Falsches Passwort für: " + username);
+                        logger.warn("Login-Fehler: Falsches Passwort für: {}", email);
                         return null;
                     }
                 })
                 .orElseGet(() -> {
-                    // 5. Benutzer wurde gar nicht in der Datenbank gefunden.
-                    System.out.println("Login-Fehler: Benutzer nicht gefunden: " + username);
+                    logger.warn("Login-Fehler: Benutzer nicht gefunden: {}", email);
                     return null;
                 });
     }
@@ -73,8 +71,7 @@ public class AuthServiceImpl implements AuthService {
         long expMillis = nowMillis + 1000 * 60 * 60 * 24; // 24 Stunden
         Date exp = new Date(expMillis);
 
-        // Konvertiert das Set der Rollen-Objekte in eine Liste von Rollen-Namen (Strings)
-        List<String> roleNames = user.getRoles().stream() // Ruft getRoles() (Plural) auf
+        List<String> roleNames = user.getRoles().stream()
                 .map(Role::getName)
                 .collect(Collectors.toList());
 
