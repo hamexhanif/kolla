@@ -1,9 +1,8 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "RAILPACK",
-    "rootDirectory": "backend",
-    "buildCommand": "apt-get update && apt-get install -y maven && mvn clean package -DskipTests"
+    "builder": "NIXPACKS",
+    "rootDirectory": "backend"
   },
   "deploy": {
     "startCommand": "java -jar target/prototype-0.0.1-SNAPSHOT.jar",
