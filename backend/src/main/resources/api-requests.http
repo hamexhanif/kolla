@@ -1,14 +1,12 @@
 ### ===================================================================
 ### AUTHENTIFIZIERUNG (Momentan deaktiviert, für später vorbereitet)
 ### ===================================================================
-
-### 1. Login (gibt 403 zurück, bis Hanif es repariert)
 # @name loginRequest
 POST http://localhost:8080/api/auth/login
 Content-Type: application/json
 
 {
-  "username": "admin",
+  "email": "admin@kolla.com",
   "password": "adminpassword"
 }
 
@@ -24,7 +22,7 @@ Content-Type: application/json
 #   - Benötigt für die Kacheln "Open Tasks", "Due Today", etc. im Akteur-Dashboard.
 #   - Wir testen wieder mit Benutzer "developer" (ID = 2).
 GET http://localhost:8080/api/users/dashboard-tasks/2
-# Authorization: Bearer {{jwt_token}} // Später einkommentieren
+Authorization: Bearer {{jwt_token}} // Später einkommentieren
 
 
 ### ===================================================================
@@ -34,13 +32,13 @@ GET http://localhost:8080/api/users/dashboard-tasks/2
 ### Ruft die zusammengefassten Dashboard-Daten für den Manager ab
 #   - Benötigt für die Kacheln "Open Tasks", "Overdue", etc. im Manager-Dashboard.
 GET http://localhost:8080/api/manager/dashboard
-# Authorization: Bearer {{jwt_token}} // Später einkommentieren
+Authorization: Bearer {{jwt_token}} // Später einkommentieren
 
 
 ### Ruft die vollständige Task-Liste für das Manager-Dashboard ab
 #   - Benötigt für die Tabelle mit allen Tasks.
 GET http://localhost:8080/api/tasks
-# Authorization: Bearer {{jwt_token}} // Später einkommentieren
+Authorization: Bearer {{jwt_token}} // Später einkommentieren
 
 
 ### ===================================================================
@@ -51,7 +49,7 @@ GET http://localhost:8080/api/tasks
 #   - Simuliert, dass der "developer" (userId: 2) den ersten Schritt (stepId: 1) des ersten Tasks (taskId: 1) abschließt.
 POST http://localhost:8080/api/task-steps/1/complete
 Content-Type: application/json
-# Authorization: Bearer {{jwt_token}} // Später einkommentieren
+Authorization: Bearer {{jwt_token}} // Später einkommentieren
 
 {
   "taskId": 1,
@@ -63,7 +61,7 @@ Content-Type: application/json
 #   - Simuliert, dass ein Manager die Priorität von Schritt 2 auf "sofort" (1) setzt.
 POST http://localhost:8080/api/task-steps/2/set-priority
 Content-Type: application/json
-# Authorization: Bearer {{jwt_token}} // Später einkommentieren
+Authorization: Bearer {{jwt_token}} // Später einkommentieren
 
 {
   "manualPriority": 1
@@ -77,11 +75,11 @@ Content-Type: application/json
 ### Erstellt einen neuen Benutzer
 POST http://localhost:8080/api/users
 Content-Type: application/json
-# Authorization: Bearer {{jwt_token}} // Später einkommentieren
+Authorization: Bearer {{jwt_token}} // Später einkommentieren
 
 {
-  "username": "neuer_benutzer",
-  "email": "neu@test.com",
+  "username": "neuer_benutzer_5",
+  "email": "neu5@test.com",
   "password": "geheimesPasswort123",
   "firstName": "Neu",
   "lastName": "Benutzer",
@@ -90,13 +88,15 @@ Content-Type: application/json
 
 ### Ruft alle Benutzer ab
 GET http://localhost:8080/api/users
+Authorization: Bearer {{jwt_token}} // Später einkommentieren
 
-# Authorization: Bearer {{jwt_token}} // Später einkommentieren
 ### Ruft einen einzelnen Benutzer ab (ID 4, den wir erstellt haben)
 GET http://localhost:8080/api/users/4
+Authorization: Bearer {{jwt_token}}
 
 ### Aktualisiert einen Benutzer (ID 4)
 PUT http://localhost:8080/api/users/4
+Authorization: Bearer {{jwt_token}}
 Content-Type: application/json
 
 {
@@ -107,3 +107,4 @@ Content-Type: application/json
 
 ### Löscht einen Benutzer (ID 4)
 DELETE http://localhost:8080/api/users/4
+Authorization: Bearer {{jwt_token}}
