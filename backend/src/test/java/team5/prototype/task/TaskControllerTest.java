@@ -10,6 +10,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import team5.prototype.dto.ManagerDashboardDto;
+import team5.prototype.dto.ManagerTaskRowDto;
 import team5.prototype.dto.TaskDetailsDto;
 import team5.prototype.dto.TaskDetailsStepDto;
 import team5.prototype.taskstep.Priority;
@@ -22,7 +24,6 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -149,9 +150,15 @@ class TaskControllerTest {
     }
 
     @Test
-    void getManagerDashboardReturnsBadRequestWhenEndpointMissing() throws Exception {
+    void getManagerDashboardReturnsSummary() throws Exception {
+        ManagerTaskRowDto row = new ManagerTaskRowDto(9L, "Row Task", Priority.LONG_TERM, 1, 4);
+        ManagerDashboardDto dashboard = new ManagerDashboardDto(3, 1, 0, List.of(row));
+
+        when(taskService.getManagerDashboard()).thenReturn(dashboard);
+
         mockMvc.perform(get("/api/tasks/manager-dashboard"))
-                .andExpect(status().isBadRequest());
-        verifyNoInteractions(taskService);
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.openTasks").value(3))
+                .andExpect(jsonPath("$.tasks[0].taskId").value(9));
     }
 }
