@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -146,11 +147,14 @@ class TaskServiceImplTest {
 
     @Test
     void completeStepThrowsWhenStepWaiting() {
-        User assigned = User.builder().id(10L).build();
+        Role role = Role.builder().id(2L).name("DEV").build();
+        User assigned = User.builder().id(10L).roles(Set.of(role)).build();
+        WorkflowStep workflowStep = WorkflowStep.builder().name("Review").requiredRole(role).build();
         TaskStep step = TaskStep.builder()
                 .id(2L)
                 .assignedUser(assigned)
                 .status(TaskStepStatus.WAITING)
+                .workflowStep(workflowStep)
                 .build();
         Task task = Task.builder()
                 .id(1L)
@@ -166,11 +170,14 @@ class TaskServiceImplTest {
 
     @Test
     void completeStepDoesNothingWhenAlreadyCompleted() {
-        User assigned = User.builder().id(10L).build();
+        Role role = Role.builder().id(2L).name("DEV").build();
+        User assigned = User.builder().id(10L).roles(Set.of(role)).build();
+        WorkflowStep workflowStep = WorkflowStep.builder().name("Review").requiredRole(role).build();
         TaskStep step = TaskStep.builder()
                 .id(2L)
                 .assignedUser(assigned)
                 .status(TaskStepStatus.COMPLETED)
+                .workflowStep(workflowStep)
                 .build();
         Task task = Task.builder()
                 .id(1L)
@@ -188,9 +195,18 @@ class TaskServiceImplTest {
 
     @Test
     void completeStepAdvancesToNextStepAndNotifies() {
-        User assigned = User.builder().id(10L).build();
-        WorkflowStep wfStep1 = WorkflowStep.builder().name("Step One").sequenceOrder(1).build();
-        WorkflowStep wfStep2 = WorkflowStep.builder().name("Step Two").sequenceOrder(2).build();
+        Role role = Role.builder().id(2L).name("DEV").build();
+        User assigned = User.builder().id(10L).roles(Set.of(role)).build();
+        WorkflowStep wfStep1 = WorkflowStep.builder()
+                .name("Step One")
+                .sequenceOrder(1)
+                .requiredRole(role)
+                .build();
+        WorkflowStep wfStep2 = WorkflowStep.builder()
+                .name("Step Two")
+                .sequenceOrder(2)
+                .requiredRole(role)
+                .build();
 
         TaskStep step1 = TaskStep.builder()
                 .id(2L)
