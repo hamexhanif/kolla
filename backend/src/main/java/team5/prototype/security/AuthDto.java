@@ -6,22 +6,21 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@JsonInclude(JsonInclude.Include.NON_NULL) // Wichtig: Sendet nur Felder, die nicht null sind
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class AuthDto {
 
-    // Felder für die Login-Anfrage (Request)
-    private String username;
-    private String password;
+    // KORREKTUR: Wir ersetzen 'username' durch 'email', um zum Frontend zu passen
+    private String email;
 
-    // Feld für die Login-Antwort (Response)
+    private String password;
     private String token;
 
-    // Konstruktor für die Antwort
+    // Konstruktor für die Antwort (bleibt gleich)
     public AuthDto(String token) {
         this.token = token;
     }
 
-    // Standard-Konstruktor, den Jackson (die JSON-Bibliothek) benötigt
+    // Standard-Konstruktor (bleibt gleich)
     public AuthDto() {
     }
 }
