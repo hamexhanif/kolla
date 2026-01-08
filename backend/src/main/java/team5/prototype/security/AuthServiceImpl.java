@@ -45,15 +45,15 @@ public class AuthServiceImpl implements AuthService {
                 .map(user -> {
                     // 2. Benutzer gefunden. Überprüfe das Passwort.
                     if (passwordEncoder.matches(password, user.getPasswordHash())) {
-                        logger.info("Login erfolgreich für: {}", email);
+                        logger.info("Login erfolgreich für: {}", username);
                         return createToken(user);
                     } else {
-                        logger.warn("Login-Fehler: Falsches Passwort für: {}", email);
+                        logger.warn("Login-Fehler: Falsches Passwort für: {}", username);
                         return null;
                     }
                 })
                 .orElseGet(() -> {
-                    logger.warn("Login-Fehler: Benutzer nicht gefunden: {}", email);
+                    logger.warn("Login-Fehler: Benutzer nicht gefunden: {}", username);
                     return null;
                 });
     }

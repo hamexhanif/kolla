@@ -3,7 +3,6 @@
 package team5.prototype.taskstep;
 
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team5.prototype.dto.ActorDashboardItemDto;
@@ -18,7 +17,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -31,7 +29,7 @@ public class TaskStepServiceImpl implements TaskStepService {
     private final NotificationService notificationService;
     private final TenantProvider tenantProvider;
 
-    // KORREKTUR: @Lazy hier, um die zirkuläre Abhängigkeit zu lösen
+    // Konstruktor-Injection
     public TaskStepServiceImpl(TaskStepRepository taskStepRepository,
                                UserRepository userRepository,
                                TaskService taskService,
@@ -44,30 +42,13 @@ public class TaskStepServiceImpl implements TaskStepService {
         this.tenantProvider = tenantProvider;
     }
 
-    // DIESE METHODE IST KORREKT UND BLEIBT
-    @Override
-    @Transactional(readOnly = true)
-    public List<ActorDashboardItemDto> getActorDashboardItems(Long userId, TaskStepStatus status, Priority priority, String query) {
-        Stream<TaskStep> steps = taskStepRepository
-                .findByAssignedUserIdAndStatusNot(userId, TaskStepStatus.COMPLETED)
-                .stream();
-        if (status != null) {
-            steps = steps.filter(step -> step.getStatus() == status);
-        }
-        if (priority != null) {
-            steps = steps.filter(step -> step.getPriority() == priority);
-        }
-        if (query != null && !query.isBlank()) {
-            String needle = query.toLowerCase(Locale.ROOT);
-            steps = steps.filter(step -> containsIgnoreCase(step.getTask().getTitle(), needle)
-                    || containsIgnoreCase(step.getWorkflowStep().getName(), needle));
-        }
-        return steps.map(this::toActorDashboardItemDto).toList();
-    }
     @Override
     @Transactional(readOnly = true)
     public List<ActorDashboardItemDto> getActorDashboardItems(Long userId) {
-        return taskStepRepository.findByAssignedUserIdAndStatusNot(userId, TaskStepStatus.COMPLETED)
+        Long tenantId = tenantProvider.getCurrentTenantId();
+        findUser(userId, tenantId);
+        return taskStepRepository.findByAssignedUserIdAndStatusNotAndTask_Tenant_Id(
+                        userId, TaskStepStatus.COMPLETED, tenantId)
                 .stream()
                 .map(this::toActorDashboardItemDto)
                 .collect(Collectors.toList());
@@ -85,10 +66,9 @@ public class TaskStepServiceImpl implements TaskStepService {
         }
         return taskStepRepository.save(step);
     }
-    // DIESE METHODE IST KORREKT UND BLEIBT
     @Override
     @Transactional
-    public TaskStep setManualPriority(Long taskStepId, int manualPriority) {
+    public TaskStepDto setManualPriorityAndConvertToDto(Long taskStepId, int manualPriority) {
         TaskStep step = findTaskStep(taskStepId, tenantProvider.getCurrentTenantId());
         step.setManualPriority(manualPriority);
         step.setPriority(mapManualPriority(manualPriority));
@@ -101,10 +81,9 @@ public class TaskStepServiceImpl implements TaskStepService {
         );
         notificationService.sendTaskUpdateNotification(savedStep.getTask().getId(), payload);
 
-        return savedStep;
+        return convertToDto(savedStep);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public List<TaskStep> getActiveTaskStepsByUser(Long userId) {
         Long tenantId = tenantProvider.getCurrentTenantId();
@@ -135,7 +114,7 @@ public class TaskStepServiceImpl implements TaskStepService {
             steps = steps.filter(step -> containsIgnoreCase(step.getTask().getTitle(), needle)
                     || containsIgnoreCase(step.getWorkflowStep().getName(), needle));
         }
-        return steps.map(this::toActorDashboardItem).toList();
+        return steps.map(this::toActorDashboardItemDto).toList();
     }
 
     // DIESE METHODE IST KORREKT UND BLEIBT

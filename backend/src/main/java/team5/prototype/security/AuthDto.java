@@ -14,7 +14,6 @@ public class AuthDto {
     private String password;
     private Long tenantId;
 
-    private String password;
     private String token;
 
     // Konstruktor für die Antwort (bleibt gleich)

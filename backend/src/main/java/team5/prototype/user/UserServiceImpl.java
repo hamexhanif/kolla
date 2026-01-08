@@ -2,6 +2,7 @@ package team5.prototype.user;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import team5.prototype.dto.CreateUserRequestDto;
 import team5.prototype.security.TenantProvider;
 import team5.prototype.tenant.Tenant;
 import team5.prototype.tenant.TenantRepository;
@@ -15,14 +16,17 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
     private final TenantProvider tenantProvider;
+    private final PasswordEncoder passwordEncoder;
 
     // Konstruktor-Injection: Spring liefert uns automatisch das UserRepository
     public UserServiceImpl(UserRepository userRepository,
                            TenantRepository tenantRepository,
-                           TenantProvider tenantProvider) {
+                           TenantProvider tenantProvider,
+                           PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.tenantRepository = tenantRepository;
         this.tenantProvider = tenantProvider;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // ===================================================================
@@ -45,6 +49,8 @@ public class UserServiceImpl implements UserService {
                 .tenant(tenant)
                 .active(true)
                 .build();
+        return userRepository.save(newUser);
+    }
 
     /**
      * Erstellt einen neuen Benutzer und speichert ihn in der Datenbank.

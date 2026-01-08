@@ -114,10 +114,14 @@ class TaskStepServiceImplTest {
         when(taskStepRepository.findByIdAndTask_Tenant_Id(1L, 5L)).thenReturn(Optional.of(taskStep));
         when(taskStepRepository.save(any(TaskStep.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        TaskStep result = taskStepService.setManualPriority(1L, 2);
+        TaskStepDto result = taskStepService.setManualPriorityAndConvertToDto(1L, 2);
 
-        assertThat(result.getManualPriority()).isEqualTo(2);
-        assertThat(result.getPriority()).isEqualTo(Priority.MEDIUM_TERM);
+        ArgumentCaptor<TaskStep> stepCaptor = ArgumentCaptor.forClass(TaskStep.class);
+        verify(taskStepRepository).save(stepCaptor.capture());
+        TaskStep saved = stepCaptor.getValue();
+        assertThat(saved.getManualPriority()).isEqualTo(2);
+        assertThat(saved.getPriority()).isEqualTo(Priority.MEDIUM_TERM);
+        assertThat(result.getPriority()).isEqualTo(Priority.MEDIUM_TERM.name());
     }
 
     @Test
@@ -126,9 +130,11 @@ class TaskStepServiceImplTest {
         when(taskStepRepository.findByIdAndTask_Tenant_Id(1L, 5L)).thenReturn(Optional.of(taskStep));
         when(taskStepRepository.save(any(TaskStep.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        TaskStep result = taskStepService.setManualPriority(1L, 1);
+        taskStepService.setManualPriorityAndConvertToDto(1L, 1);
 
-        assertThat(result.getPriority()).isEqualTo(Priority.IMMEDIATE);
+        ArgumentCaptor<TaskStep> stepCaptor = ArgumentCaptor.forClass(TaskStep.class);
+        verify(taskStepRepository).save(stepCaptor.capture());
+        assertThat(stepCaptor.getValue().getPriority()).isEqualTo(Priority.IMMEDIATE);
     }
 
     @Test
@@ -137,9 +143,11 @@ class TaskStepServiceImplTest {
         when(taskStepRepository.findByIdAndTask_Tenant_Id(1L, 5L)).thenReturn(Optional.of(taskStep));
         when(taskStepRepository.save(any(TaskStep.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        TaskStep result = taskStepService.setManualPriority(1L, 3);
+        taskStepService.setManualPriorityAndConvertToDto(1L, 3);
 
-        assertThat(result.getPriority()).isEqualTo(Priority.LONG_TERM);
+        ArgumentCaptor<TaskStep> stepCaptor = ArgumentCaptor.forClass(TaskStep.class);
+        verify(taskStepRepository).save(stepCaptor.capture());
+        assertThat(stepCaptor.getValue().getPriority()).isEqualTo(Priority.LONG_TERM);
     }
 
     @Test
@@ -148,7 +156,7 @@ class TaskStepServiceImplTest {
         when(taskStepRepository.findByIdAndTask_Tenant_Id(1L, 5L)).thenReturn(Optional.of(taskStep));
         when(taskStepRepository.save(any(TaskStep.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        taskStepService.setManualPriority(1L, 2);
+        taskStepService.setManualPriorityAndConvertToDto(1L, 2);
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Map<String, Object>> payloadCaptor = ArgumentCaptor.forClass(Map.class);

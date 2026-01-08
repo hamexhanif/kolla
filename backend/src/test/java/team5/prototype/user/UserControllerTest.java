@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import team5.prototype.dto.CreateUserRequestDto;
 
 import java.util.List;
 import java.util.Optional;
@@ -68,17 +69,18 @@ class UserControllerTest {
 
     @Test
     void createUserReturnsDto() throws Exception {
-        User request = User.builder()
-                .username("alex")
-                .email("alex@example.com")
-                .build();
+        CreateUserRequestDto request = new CreateUserRequestDto();
+        request.setUsername("alex");
+        request.setEmail("alex@example.com");
+        request.setPassword("secret");
+        request.setTenantId(1L);
         User created = User.builder()
                 .id(9L)
                 .username("alex")
                 .email("alex@example.com")
                 .build();
 
-        when(userService.createUser(any(User.class))).thenReturn(created);
+        when(userService.createUser(any(CreateUserRequestDto.class))).thenReturn(created);
 
         mockMvc.perform(post("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)

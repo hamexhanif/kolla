@@ -8,6 +8,7 @@ import team5.prototype.dto.ManagerTaskRowDto;
 import team5.prototype.dto.TaskDetailsDto;
 import team5.prototype.dto.TaskDetailsStepDto;
 import team5.prototype.notification.NotificationService;
+import team5.prototype.role.Role;
 import team5.prototype.security.TenantProvider;
 import team5.prototype.taskstep.Priority;
 import team5.prototype.taskstep.PriorityService;
