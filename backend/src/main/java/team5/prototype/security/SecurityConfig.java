@@ -26,7 +26,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/auth/**", "/h2-console/**", "/ws/**").permitAll()
+                        .requestMatchers("/", "/api/auth/**", "/h2-console/**", "/ws/**").permitAll()
                         // 2. Manager-spezifische Endpunkte
                         .requestMatchers("/api/manager/**").hasRole("WORKFLOW_MANAGER")
                         .requestMatchers(HttpMethod.GET, "/api/users").hasRole("WORKFLOW_MANAGER") // Nur Manager dürfen ALLE User sehen
