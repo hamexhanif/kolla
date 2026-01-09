@@ -1,11 +1,14 @@
 package team5.prototype.role;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import team5.prototype.dto.RoleDto;
 import team5.prototype.user.User; // Import der User-Klasse
 import team5.prototype.user.UserRepository; // Import des UserRepository
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class RoleServiceImpl implements RoleService {
@@ -32,6 +35,31 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public Optional<Role> getRoleById(Long roleId) {
         return roleRepository.findById(roleId);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<RoleDto> getAllRolesAsDto() {
+        return roleRepository.findAll().stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public RoleDto getRoleByIdAsDto(Long id) {
+        return roleRepository.findById(id)
+                .map(this::convertToDto)
+                .orElse(null);
+    }
+
+    private RoleDto convertToDto(Role role) {
+        return RoleDto.builder()
+                .id(role.getId())
+                .name(role.getName())
+                .description(role.getDescription())
+                .tenantName(role.getTenant() != null ? role.getTenant().getName() : null)
+                .build();
     }
 
     @Override
