@@ -29,7 +29,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/h2-console/**", "/ws/**").permitAll()
                         // 2. Manager-spezifische Endpunkte
                         .requestMatchers("/api/manager/**").hasRole("WORKFLOW_MANAGER")
-                        .requestMatchers(HttpMethod.GET, "/api/users").hasRole("WORKFLOW_MANAGER") // Nur Manager dürfen ALLE User sehen
+                        .requestMatchers(HttpMethod.GET, "/api/users", "/api/roles").hasRole("WORKFLOW_MANAGER") // Nur Manager dürfen ALLE User und Role sehen
                         // 3. Regeln für normale Benutzer
                         // Jeder authentifizierte Benutzer darf seine EIGENEN Tasks abrufen.
                         // Spring EL (@) erlaubt uns hier, die userId aus dem Pfad mit dem Namen des eingeloggten Benutzers zu vergleichen.
