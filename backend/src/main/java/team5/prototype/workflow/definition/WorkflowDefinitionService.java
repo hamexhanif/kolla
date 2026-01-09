@@ -4,9 +4,11 @@ import java.util.List;
 
 public interface WorkflowDefinitionService {
 
-    List<WorkflowDefinition> getAllDefinitions();
-
-    // --- NEUE METHODEN ---
     WorkflowDefinition createWorkflowDefinition(WorkflowDefinition definition);
-    void deleteWorkflowDefinition(Long definitionId);
+
+    WorkflowDefinitionDto getWorkflowDefinitionByIdAsDto(Long id);
+
+    List<WorkflowDefinitionDto> getAllWorkflowDefinitionsAsDto();
+
+    WorkflowDefinitionDto createWorkflowDefinitionAsDto(WorkflowDefinition definition);
 }

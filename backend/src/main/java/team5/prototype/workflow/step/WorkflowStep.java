@@ -1,5 +1,6 @@
 package team5.prototype.workflow.step;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import team5.prototype.role.Role;
@@ -34,6 +35,7 @@ public class WorkflowStep {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workflow_definition_id", nullable = false)
+    @JsonBackReference
     private WorkflowDefinition workflowDefinition;
 
     @ManyToOne(fetch = FetchType.EAGER)
