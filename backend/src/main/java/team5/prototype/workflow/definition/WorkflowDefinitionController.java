@@ -16,25 +16,21 @@ public class WorkflowDefinitionController {
         this.workflowDefinitionService = workflowDefinitionService;
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<WorkflowDefinitionDto> getWorkflowDefinition(@PathVariable Long id) {
-        WorkflowDefinitionDto dto = workflowDefinitionService.getWorkflowDefinitionByIdAsDto(id);
-        if (dto != null) {
-            return ResponseEntity.ok(dto);
-        }
-        return ResponseEntity.notFound().build();
+    @GetMapping
+    public ResponseEntity<List<WorkflowDefinition>> getAllDefinitions() {
+        return ResponseEntity.ok(workflowDefinitionService.getAllDefinitions());
     }
 
-    @GetMapping
-    public ResponseEntity<List<WorkflowDefinitionDto>> getAllWorkflowDefinitions() {
-        List<WorkflowDefinitionDto> dtos = workflowDefinitionService.getAllWorkflowDefinitionsAsDto();
-        return ResponseEntity.ok(dtos);
+    @GetMapping("/{id}")
+    public ResponseEntity<WorkflowDefinition> getDefinitionById(@PathVariable Long id) {
+        return workflowDefinitionService.getDefinitionById(id)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<WorkflowDefinitionDto> createWorkflowDefinition(@RequestBody WorkflowDefinition definition) {
-        WorkflowDefinitionDto dto = workflowDefinitionService.createWorkflowDefinitionAsDto(definition);
-        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+    public ResponseEntity<WorkflowDefinition> createWorkflowDefinition(@RequestBody WorkflowDefinition definition) {
+        WorkflowDefinition created = workflowDefinitionService.createWorkflowDefinition(definition);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
-
 }

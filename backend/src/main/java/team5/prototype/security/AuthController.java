@@ -18,13 +18,10 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthDto> login(@RequestBody AuthDto authDto) {
-        // Call service method that handles all business logic including DB lookup
-        AuthDto response = authService.login(authDto.getEmail(), authDto.getPassword());
-
-        if (response != null) {
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.status(401).build();
+        String token = authService.login(authDto.getEmail(), authDto.getPassword(), authDto.getTenantId());
+        if (token != null) {
+            return ResponseEntity.ok(new AuthDto(token));
         }
+        return ResponseEntity.status(401).build();
     }
 }
