@@ -3,7 +3,6 @@ package team5.prototype.user;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import team5.prototype.dto.CreateUserRequestDto;
-import team5.prototype.security.TenantProvider;
 import team5.prototype.tenant.Tenant;
 import team5.prototype.tenant.TenantRepository;
 
@@ -15,17 +14,14 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
-    private final TenantProvider tenantProvider;
     private final PasswordEncoder passwordEncoder;
 
-    // Konstruktor-Injection: Spring liefert uns automatisch das UserRepository
+    // Konstruktor wurde angepasst, um die neuen Abhängigkeiten zu erhalten
     public UserServiceImpl(UserRepository userRepository,
                            TenantRepository tenantRepository,
-                           TenantProvider tenantProvider,
                            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.tenantRepository = tenantRepository;
-        this.tenantProvider = tenantProvider;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -49,39 +45,26 @@ public class UserServiceImpl implements UserService {
                 .tenant(tenant)
                 .active(true)
                 .build();
-        return userRepository.save(newUser);
-    }
 
-    /**
-     * Erstellt einen neuen Benutzer und speichert ihn in der Datenbank.
-     * @param user Das zu erstellende User-Objekt.
-     * @return Der gespeicherte User (inklusive der generierten ID).
-     */
-    public User createUser(User user) {
-        // Später könnten hier Validierungen hinzugefügt werden (z.B. Passwortstärke prüfen)
-        Long tenantId = tenantProvider.getCurrentTenantId();
-        Tenant tenant = tenantRepository.findById(tenantId)
-                .orElseThrow(() -> new RuntimeException("Tenant mit ID " + tenantId + " nicht gefunden!"));
-        user.setTenant(tenant);
-        return userRepository.save(user);
+        // 3. Speichere den neuen User und gib ihn zurück
+        return userRepository.save(newUser);
     }
 
     // --- Die anderen Methoden bleiben größtenteils unverändert ---
 
     @Override
     public List<User> getAllUsers() {
-        return userRepository.findAllByTenant_Id(tenantProvider.getCurrentTenantId());
+        return userRepository.findAll();
     }
 
     @Override
     public Optional<User> getUserById(Long userId) {
-        return userRepository.findByIdAndTenant_Id(userId, tenantProvider.getCurrentTenantId());
+        return userRepository.findById(userId);
     }
 
     @Override
     public User updateUser(Long userId, User userDetails) {
-        // Finde den existierenden Benutzer oder wirf eine Ausnahme
-        return userRepository.findByIdAndTenant_Id(userId, tenantProvider.getCurrentTenantId())
+        return userRepository.findById(userId)
                 .map(existingUser -> {
                     existingUser.setUsername(userDetails.getUsername());
                     existingUser.setEmail(userDetails.getEmail());
@@ -92,8 +75,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(Long userId) {
-        // Prüfen, ob der Benutzer existiert, bevor versucht wird, ihn zu löschen
-        if (!userRepository.existsByIdAndTenant_Id(userId, tenantProvider.getCurrentTenantId())) {
+        if (!userRepository.existsById(userId)) {
             throw new RuntimeException("Benutzer mit ID " + userId + " nicht gefunden!");
         }
         userRepository.deleteById(userId);

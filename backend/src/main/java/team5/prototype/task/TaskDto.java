@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+@ValidTaskDeadline
 @Getter
 @Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)

@@ -16,25 +16,9 @@ public class TenantController {
     }
 
     @PostMapping
-    public Tenant createTenant(@RequestBody Tenant tenant) {
-        return tenantService.createTenant(tenant);
     }
 
     @GetMapping
-    public List<Tenant> getAllTenants() {
-        return tenantService.getAllTenants();
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Tenant> getTenantById(@PathVariable Long id) {
-        return tenantService.getTenantById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PutMapping("/{id}")
-    public Tenant updateTenant(@PathVariable Long id, @RequestBody Tenant tenantDetails) {
-        return tenantService.updateTenant(id, tenantDetails);
     }
 
     @DeleteMapping("/{id}")

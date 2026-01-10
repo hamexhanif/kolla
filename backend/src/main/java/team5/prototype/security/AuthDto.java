@@ -9,20 +9,24 @@ import lombok.Setter;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AuthDto {
 
-    // Felder für die Login-Anfrage (Request)
-    private String username;
+    // KORREKTUR: Wir ersetzen 'username' durch 'email', um zum Frontend zu passen
     private String email;
+
     private String password;
-    private Long tenantId;
-
     private String token;
+    private Long userId;
 
-    // Konstruktor für die Antwort (bleibt gleich)
-    public AuthDto(String token) {
+    public AuthDto(String token, Long userId) {
         this.token = token;
+        this.userId = userId;
     }
-
-    // Standard-Konstruktor (bleibt gleich)
-    public AuthDto() {
-    }
+//
+//    // Konstruktor für die Antwort (bleibt gleich)
+//    public AuthDto(String token) {
+//        this.token = token;
+//    }
+//
+//    // Standard-Konstruktor (bleibt gleich)
+//    public AuthDto() {
+//    }
 }

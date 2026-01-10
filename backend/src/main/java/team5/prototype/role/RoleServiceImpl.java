@@ -1,7 +1,8 @@
 package team5.prototype.role;
 
 import org.springframework.stereotype.Service;
-import team5.prototype.security.TenantProvider;
+import org.springframework.transaction.annotation.Transactional;
+import team5.prototype.dto.CreateRoleRequestDto;
 import team5.prototype.tenant.Tenant;
 import team5.prototype.tenant.TenantRepository;
 import team5.prototype.user.User; // Import der User-Klasse
@@ -9,48 +10,73 @@ import team5.prototype.user.UserRepository; // Import des UserRepository
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class RoleServiceImpl implements RoleService {
 
     private final RoleRepository roleRepository;
-    private final UserRepository userRepository; // Wird für assignRoleToUser benötigt
     private final TenantRepository tenantRepository;
-    private final TenantProvider tenantProvider;
+    private final UserRepository userRepository; // Wird für assignRoleToUser benötigt
 
-    public RoleServiceImpl(RoleRepository roleRepository,
-                           UserRepository userRepository,
-                           TenantRepository tenantRepository,
-                           TenantProvider tenantProvider) {
+    public RoleServiceImpl(RoleRepository roleRepository, UserRepository userRepository, TenantRepository tenantRepository) {
         this.roleRepository = roleRepository;
         this.userRepository = userRepository;
         this.tenantRepository = tenantRepository;
-        this.tenantProvider = tenantProvider;
     }
 
     @Override
-    public Role createRole(Role role) {
-        // Hier könnten Validierungen für Tenant, etc. hinzukommen
-        Long tenantId = tenantProvider.getCurrentTenantId();
-        Tenant tenant = tenantRepository.findById(tenantId)
-                .orElseThrow(() -> new RuntimeException("Tenant mit ID " + tenantId + " nicht gefunden!"));
-        role.setTenant(tenant);
-        return roleRepository.save(role);
+    public Role createRole(CreateRoleRequestDto requestDto) {
+        // Lade den Tenant anhand der ID aus dem DTO
+        Tenant tenant = tenantRepository.findById(requestDto.getTenantId())
+                .orElseThrow(() -> new RuntimeException("Tenant nicht gefunden"));
+
+        Role newRole = new Role();
+        newRole.setName(requestDto.getName());
+        newRole.setDescription(requestDto.getDescription());
+        newRole.setTenant(tenant);// WICHTIG: Setze den Tenant
+
+        return roleRepository.save(newRole);
     }
 
     @Override
     public List<Role> getAllRoles() {
-        return roleRepository.findAllByTenant_Id(tenantProvider.getCurrentTenantId());
+        return roleRepository.findAll();
     }
 
     @Override
     public Optional<Role> getRoleById(Long roleId) {
-        return roleRepository.findByIdAndTenant_Id(roleId, tenantProvider.getCurrentTenantId());
+        return roleRepository.findById(roleId);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<RoleDto> getAllRolesAsDto() {
+        return roleRepository.findAll().stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public RoleDto getRoleByIdAsDto(Long id) {
+        return roleRepository.findById(id)
+                .map(this::convertToDto)
+                .orElse(null);
+    }
+
+    private RoleDto convertToDto(Role role) {
+        return RoleDto.builder()
+                .id(role.getId())
+                .name(role.getName())
+                .description(role.getDescription())
+                .tenantName(role.getTenant() != null ? role.getTenant().getName() : null)
+                .build();
     }
 
     @Override
     public Role updateRole(Long roleId, Role roleDetails) {
-        return roleRepository.findByIdAndTenant_Id(roleId, tenantProvider.getCurrentTenantId())
+        return roleRepository.findById(roleId)
                 .map(existingRole -> {
                     existingRole.setName(roleDetails.getName());
                     existingRole.setDescription(roleDetails.getDescription());
@@ -61,19 +87,16 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     public void deleteRole(Long roleId) {
-        Role role = roleRepository.findByIdAndTenant_Id(roleId, tenantProvider.getCurrentTenantId())
-                .orElseThrow(() -> new RuntimeException("Rolle mit ID " + roleId + " nicht gefunden!"));
-        roleRepository.delete(role);
+        roleRepository.deleteById(roleId);
     }
 
     @Override
     public void assignRoleToUser(Long userId, Long roleId) {
-        Long tenantId = tenantProvider.getCurrentTenantId();
         // Lade den User und die Rolle aus der Datenbank
-        User user = userRepository.findByIdAndTenant_Id(userId, tenantId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User mit ID " + userId + " nicht gefunden!"));
 
-        Role role = roleRepository.findByIdAndTenant_Id(roleId, tenantId)
+        Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new RuntimeException("Rolle mit ID " + roleId + " nicht gefunden!"));
 
         // Führe die Zuweisung durch (in der User-Entity)

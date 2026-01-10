@@ -34,42 +34,23 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public String login(String username, String password) {
-        return login(username, password, null);
-    }
-
-    @Override
-    public String login(String username, String password, Long tenantId) {
-        // 1. Finde den Benutzer in der Datenbank anhand seines Benutzernamens.
-        return resolveUser(username, tenantId)
+    public String login(String email, String password) {
+        // 1. Finde den Benutzer in der Datenbank anhand seiner E-MAIL.
+        return userRepository.findByEmail(email)
                 .map(user -> {
                     // 2. Benutzer gefunden. Überprüfe das Passwort.
                     if (passwordEncoder.matches(password, user.getPasswordHash())) {
-                        logger.info("Login erfolgreich für: {}", username);
+                        logger.info("Login erfolgreich für: {}", email);
                         return createToken(user);
                     } else {
-                        logger.warn("Login-Fehler: Falsches Passwort für: {}", username);
+                        logger.warn("Login-Fehler: Falsches Passwort für: {}", email);
                         return null;
                     }
                 })
                 .orElseGet(() -> {
-                    logger.warn("Login-Fehler: Benutzer nicht gefunden: {}", username);
+                    logger.warn("Login-Fehler: Benutzer nicht gefunden: {}", email);
                     return null;
                 });
-    }
-
-    private java.util.Optional<User> resolveUser(String identifier, Long tenantId) {
-        boolean isEmail = identifier != null && identifier.contains("@");
-        if (tenantId != null) {
-            if (isEmail) {
-                return userRepository.findByEmailAndTenant_Id(identifier, tenantId);
-            }
-            return userRepository.findByUsernameAndTenant_Id(identifier, tenantId);
-        }
-        if (isEmail) {
-            return userRepository.findByEmail(identifier);
-        }
-        return userRepository.findByUsername(identifier);
     }
 
     private String createToken(User user) {
@@ -82,17 +63,12 @@ public class AuthServiceImpl implements AuthService {
                 .map(Role::getName)
                 .collect(Collectors.toList());
 
-        var builder = Jwts.builder()
-                .setSubject(user.getUsername())
-                .claim("roles", roleNames) // Fügt die Liste der Rollen-Namen zum Token hinzu
+        return Jwts.builder()
+                .setSubject(user.getEmail()) // Im Token bleibt der Username der "Subject"
+                .claim("roles", roleNames)
                 .setIssuedAt(now)
                 .setExpiration(exp)
-                .signWith(jwtSecretKey, SignatureAlgorithm.HS512);
-
-        if (user.getTenant() != null) {
-            builder.claim("tenantId", user.getTenant().getId());
-        }
-
-        return builder.compact();
+                .signWith(jwtSecretKey, SignatureAlgorithm.HS512)
+                .compact();
     }
 }

@@ -17,14 +17,12 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthDto> login(@RequestBody AuthDto authDto) { // Verwendet jetzt AuthDto
-        String identifier = authDto.getEmail();
-        if (identifier == null || identifier.isBlank()) {
-            identifier = authDto.getUsername();
-        }
-        String token = authService.login(identifier, authDto.getPassword(), authDto.getTenantId());
-        if (token != null) {
-            return ResponseEntity.ok(new AuthDto(token));
+    public ResponseEntity<AuthDto> login(@RequestBody AuthDto authDto) {
+        // Call service method that handles all business logic including DB lookup
+        AuthDto response = authService.login(authDto.getEmail(), authDto.getPassword());
+
+        if (response != null) {
+            return ResponseEntity.ok(response);
         } else {
             return ResponseEntity.status(401).build();
         }
