@@ -105,4 +105,16 @@ class AuthServiceImplTest {
         Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
         assertThat(claims.get("tenantId", Number.class).longValue()).isEqualTo(9L);
     }
+
+    @Test
+    void loginReturnsNullWhenTenantMismatch() {
+        UserRepository userRepository = Mockito.mock(UserRepository.class);
+        AuthServiceImpl authService = new AuthServiceImpl(userRepository, SECRET);
+
+        when(userRepository.findByEmailAndTenant_Id("user@example.com", 9L)).thenReturn(Optional.empty());
+
+        String token = authService.login("user@example.com", "pass", 9L);
+
+        assertThat(token).isNull();
+    }
 }

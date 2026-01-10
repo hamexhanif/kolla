@@ -51,6 +51,7 @@ class RoleServiceImplTest {
         Role saved = roleService.createRole(role);
 
         assertThat(saved).isEqualTo(role);
+        assertThat(saved.getTenant()).isEqualTo(tenant);
     }
 
     @Test

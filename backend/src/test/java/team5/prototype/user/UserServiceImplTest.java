@@ -5,6 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import team5.prototype.dto.CreateUserRequestDto;
 import team5.prototype.security.TenantProvider;
 import team5.prototype.tenant.Tenant;
 import team5.prototype.tenant.TenantRepository;
@@ -45,6 +46,25 @@ class UserServiceImplTest {
         User saved = userService.createUser(user);
 
         assertThat(saved).isEqualTo(user);
+    }
+
+    @Test
+    void createUserUsesTenantProviderWhenDtoMissingTenantId() {
+        CreateUserRequestDto request = new CreateUserRequestDto();
+        request.setUsername("alex");
+        request.setEmail("alex@example.com");
+        request.setPassword("secret");
+
+        Tenant tenant = Tenant.builder().id(2L).name("t2").build();
+
+        when(tenantProvider.getCurrentTenantId()).thenReturn(2L);
+        when(tenantRepository.findById(2L)).thenReturn(Optional.of(tenant));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User saved = userService.createUser(request);
+
+        assertThat(saved.getTenant()).isEqualTo(tenant);
+        assertThat(saved.getPasswordHash()).isEqualTo("secret");
     }
 
     @Test

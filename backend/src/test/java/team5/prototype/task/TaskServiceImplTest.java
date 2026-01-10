@@ -245,4 +245,28 @@ class TaskServiceImplTest {
         assertThat(task.getCurrentStepIndex()).isEqualTo(1);
         verify(notificationService).sendTaskUpdateNotification(any(Long.class), any(Map.class));
     }
+
+    @Test
+    void getAllTasksUsesTenantScope() {
+        Task task = Task.builder().id(1L).build();
+
+        when(taskRepository.findAllByTenant_Id(5L)).thenReturn(List.of(task));
+
+        List<Task> tasks = taskService.getAllTasks();
+
+        assertThat(tasks).containsExactly(task);
+        verify(taskRepository).findAllByTenant_Id(5L);
+    }
+
+    @Test
+    void getTaskByIdUsesTenantScope() {
+        Task task = Task.builder().id(1L).build();
+
+        when(taskRepository.findByIdAndTenant_Id(1L, 5L)).thenReturn(Optional.of(task));
+
+        Optional<Task> result = taskService.getTaskById(1L);
+
+        assertThat(result).contains(task);
+        verify(taskRepository).findByIdAndTenant_Id(1L, 5L);
+    }
 }
