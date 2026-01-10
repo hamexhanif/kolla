@@ -128,7 +128,7 @@ Authorization: Bearer {{manager_token}}
 
 ### A. Persönliche Aufgabenliste abrufen ("My Tasks")
 ## WICHTIG: Führe zuerst den "loginAsUser"-Request aus!
-GET http://localhost:8080/api/users/2/tasks
+GET http://localhost:8080/api/users/dashboard-tasks/2
 Authorization: Bearer {{user_token}}
 
 # Debug: Was ist user_token?
