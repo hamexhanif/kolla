@@ -80,6 +80,11 @@ Authorization: Bearer {{manager_token}}
 GET http://localhost:8080/api/users
 Authorization: Bearer {{manager_token}}
 
+### C.2.b Einen Benutzer abrufen
+GET http://localhost:8080/api/users/3
+Authorization: Bearer {{manager_token}}
+
+
 ### C.3 Neuen Benutzer erstellen
 POST http://localhost:8080/api/users
 Content-Type: application/json
@@ -101,9 +106,9 @@ Content-Type: application/json
 Authorization: Bearer {{manager_token}}
 
 {
-  "username": "neuer_mitarbeiter_updated",
-  "email": "neu.updated@kolla.com",
-  "roleIds": [2, 3]
+  "username": "updated_username",
+  "email": "updated.email@kolla.com",
+  "roleIds": [3]
 }
 
 ### C.5 Benutzer löschen (z.B. ID 4)
@@ -242,15 +247,24 @@ Authorization: Bearer {{manager_token}}
 ### Weist einem Benutzer eine neue Rolle zu
 # Simuliert, dass dem "tester" (User ID 3) die neue Rolle "HUMAN_RESOURCES" (Rollen ID 4) zugewiesen wird.
 # HINWEIS: Hierfür muss noch ein Endpunkt im RoleController erstellt werden.
-# POST http://localhost:8080/api/roles/assign
-# Content-Type: application/json
-# Authorization: Bearer {{manager_token}}
-#
-# {
-#   "userId": 3,
-#   "roleId": 4
-# }
+POST http://localhost:8080/api/roles/assign
+Content-Type: application/json
+Authorization: Bearer {{manager_token}}
 
+{
+   "userId": 3,
+   "roleId": 4
+}
+### C.4 Benutzer aktualisieren (z.B. den eben erstellten mit ID 4)
+PUT http://localhost:8080/api/users/4
+Content-Type: application/json
+Authorization: Bearer {{manager_token}}
+
+{
+  "username": "neuer_mitarbeiter_updated",
+  "email": "neu.updated@kolla.com",
+  "roleIds": [2, 3]
+}
 
 ### Löscht eine Rolle
 # Wir löschen die Rolle, die wir erstellt haben (ID 4).

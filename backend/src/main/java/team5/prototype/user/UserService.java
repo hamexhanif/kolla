@@ -22,11 +22,12 @@ public interface UserService {
     /**
      * Aktualisiert einen bestehenden Benutzer.
      */
-    User updateUser(Long userId, User userDetails);
+    User updateUser(Long userId, UpdateUserRequestDto requestDto);
 
     /**
      * Löscht einen Benutzer.
      */
     void deleteUser(Long userId);
     User createUser(CreateUserRequestDto requestDto);
+
 }
