@@ -9,11 +9,7 @@ import team5.prototype.dto.TaskDetailsDto;
 import team5.prototype.dto.TaskDetailsStepDto;
 import team5.prototype.notification.NotificationService;
 import team5.prototype.role.Role;
-import team5.prototype.taskstep.Priority;
-import team5.prototype.taskstep.PriorityService;
-import team5.prototype.taskstep.TaskStep;
-import team5.prototype.taskstep.TaskStepDto;
-import team5.prototype.taskstep.TaskStepStatus;
+import team5.prototype.taskstep.*;
 import team5.prototype.user.User;
 import team5.prototype.user.UserRepository;
 import team5.prototype.workflow.definition.WorkflowDefinition;
@@ -35,17 +31,20 @@ import java.util.stream.Collectors;
 public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
+    private final TaskStepRepository taskStepRepository;
     private final WorkflowDefinitionRepository definitionRepository;
     private final UserRepository userRepository;
     private final PriorityService priorityService;
     private final NotificationService notificationService;
 
     public TaskServiceImpl(TaskRepository taskRepository,
+                           TaskStepRepository taskStepRepository,
                            WorkflowDefinitionRepository definitionRepository,
                            UserRepository userRepository,
                            PriorityService priorityService,
                            NotificationService notificationService) {
         this.taskRepository = taskRepository;
+        this.taskStepRepository = taskStepRepository;
         this.definitionRepository = definitionRepository;
         this.userRepository = userRepository;
         this.priorityService = priorityService;
@@ -348,8 +347,74 @@ public class TaskServiceImpl implements TaskService {
         }
 
         String roleName = workflowStep.getRequiredRole().getName();
-        return userRepository.findFirstByRoles_NameAndTenant_IdOrderByIdAsc(roleName, tenantId)
-                .orElseThrow(() -> new IllegalStateException("Kein Benutzer fuer Rolle %s gefunden".formatted(roleName)));
+
+        // Step 1: Get all users with the required role
+        List<User> availableUsers = userRepository.findActiveUsersByRoleAndTenant(roleName, tenantId);
+
+        if (availableUsers.isEmpty()) {
+            throw new IllegalStateException("Kein Benutzer fuer Rolle %s gefunden".formatted(roleName));
+        }
+
+        // Step 2: Find the best assignee using hybrid approach
+        return findBestAssignee(availableUsers);
+    }
+
+    /**
+     * Find the best assignee using a hybrid approach:
+     * 1. First tries to find a user with no active tasks (available)
+     * 2. If all have tasks, selects the user with:
+     *    a) Least number of active tasks
+     *    b) As a tiebreaker: furthest deadline on their current tasks
+     */
+    private User findBestAssignee(List<User> candidates) {
+        // Create a map of user -> their active task steps with task details
+        Map<User, List<TaskStep>> userTaskMap = candidates.stream()
+                .collect(Collectors.toMap(
+                        user -> user,
+                        user -> taskStepRepository.findActiveTaskStepsByUser(user.getId())
+                ));
+
+        // Step 1: Look for completely available users (no active tasks)
+        Optional<User> availableUser = userTaskMap.entrySet().stream()
+                .filter(entry -> entry.getValue().isEmpty())
+                .map(Map.Entry::getKey)
+                .findFirst();
+
+        if (availableUser.isPresent()) {
+            return availableUser.get();
+        }
+
+        // Step 2: If no one is completely available, sort by:
+        // a) Number of active tasks (ascending)
+        // b) Furthest deadline among their tasks (descending)
+        return userTaskMap.entrySet().stream()
+                .sorted((entry1, entry2) -> {
+                    List<TaskStep> tasks1 = entry1.getValue();
+                    List<TaskStep> tasks2 = entry2.getValue();
+
+                    // First criterion: fewer active tasks
+                    int taskCountComparison = Integer.compare(tasks1.size(), tasks2.size());
+                    if (taskCountComparison != 0) {
+                        return taskCountComparison;
+                    }
+
+                    // Second criterion: furthest deadline (later deadline = better)
+                    LocalDateTime deadline1 = tasks1.stream()
+                            .map(ts -> ts.getTask().getDeadline())
+                            .max(LocalDateTime::compareTo)
+                            .orElse(LocalDateTime.MIN);
+
+                    LocalDateTime deadline2 = tasks2.stream()
+                            .map(ts -> ts.getTask().getDeadline())
+                            .max(LocalDateTime::compareTo)
+                            .orElse(LocalDateTime.MIN);
+
+                    // Reverse comparison (descending) for deadline - furthest deadline is better
+                    return deadline2.compareTo(deadline1);
+                })
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Kein verfuegbarer Benutzer gefunden"));
     }
 
     private User findUser(Long userId) {
