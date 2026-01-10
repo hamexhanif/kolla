@@ -12,4 +12,5 @@ public class CreateUserRequestDto {
     private String firstName;
     private String lastName;
     private Long tenantId;
+    private Long roleId;
 }
