@@ -63,6 +63,24 @@ public class TaskServiceImpl implements TaskService {
             throw new IllegalStateException("WorkflowDefinition enthaelt keine Schritte");
         }
 
+        List<WorkflowStep> orderedSteps = definition.getSteps()
+                .stream()
+                .sorted(Comparator.comparingInt(WorkflowStep::getSequenceOrder))
+                .collect(Collectors.toList());
+
+        // Calculate total duration from all workflow steps
+        long totalDurationHours = orderedSteps.stream()
+                .mapToLong(WorkflowStep::getDurationHours)
+                .sum();
+
+        LocalDateTime minimumDeadline = LocalDateTime.now().plusHours(totalDurationHours);
+        if (request.getDeadline().isBefore(minimumDeadline)) {
+            throw new IllegalArgumentException(
+                    String.format("Deadline muss mindestens %s sein (jetzt + %d Stunden)",
+                            minimumDeadline, totalDurationHours)
+            );
+        }
+
         User creator = findUser(request.getCreatorUserId());
 
         Task task = Task.builder()
@@ -76,11 +94,6 @@ public class TaskServiceImpl implements TaskService {
                 .currentStepIndex(0)
                 .taskSteps(new ArrayList<>())
                 .build();
-
-        List<WorkflowStep> orderedSteps = definition.getSteps()
-                .stream()
-                .sorted(Comparator.comparingInt(WorkflowStep::getSequenceOrder))
-                .collect(Collectors.toList());
 
         Map<Long, Long> overrides = request.getStepAssignments();
         List<TaskStep> concreteSteps = buildTaskSteps(task, orderedSteps, overrides);
@@ -380,10 +393,25 @@ public class TaskServiceImpl implements TaskService {
     }
 
     private LocalDateTime resolveStepDueDate(TaskStep step) {
-//        if (step.getAssignedAt() == null) {
-//            return null;
-//        }
-        return step.getTask().getDeadline().plusHours(step.getWorkflowStep().getDurationHours());
+        LocalDateTime taskDeadline = step.getTask().getDeadline();
+        if (taskDeadline == null) {
+            return null;
+        }
+
+        // Get all steps sorted by sequence order
+        List<WorkflowStep> allWorkflowSteps = step.getTask().getWorkflowDefinition().getSteps().stream()
+                .sorted(Comparator.comparingInt(WorkflowStep::getSequenceOrder))
+                .toList();
+
+        int currentStepSequence = step.getWorkflowStep().getSequenceOrder();
+
+        // Calculate sum of durations for all steps AFTER the current step
+        long remainingDurationHours = allWorkflowSteps.stream()
+                .filter(ws -> ws.getSequenceOrder() > currentStepSequence)
+                .mapToLong(WorkflowStep::getDurationHours)
+                .sum();
+
+        return taskDeadline.minusHours(remainingDurationHours);
     }
 
     private String formatAssigneeName(User user) {
