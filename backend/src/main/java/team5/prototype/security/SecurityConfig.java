@@ -33,6 +33,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/users/{userId}/tasks").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/users/{userId}/dashboard").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/task-steps/*/complete").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/users/dashboard-tasks/{userId}").authenticated()
 
                         // 3. Spezifische Regeln für Manager (jetzt können sie nichts mehr "stehlen")
                         .requestMatchers("/api/manager/**").hasRole("WORKFLOW_MANAGER")
