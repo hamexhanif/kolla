@@ -274,3 +274,37 @@ Authorization: Bearer {{manager_token}}
 ### Ruft alle Mandanten ab
 GET http://localhost:8080/api/tenants
 Authorization: Bearer {{manager_token}}
+
+### ===================================================================
+### ECHTZEIT-BENACHRICHTIGUNGEN (WebSocket)
+### ===================================================================
+
+# HINWEIS: Diese Funktionalität kann nicht direkt in dieser Datei getestet werden.
+# Sie dient als Dokumentation für das Frontend.
+
+# 1. Verbindung herstellen
+# Ein Client muss sich über SockJS mit dem folgenden Endpunkt verbinden:
+# URL: http://localhost:8080/ws
+
+# 2. Ein Thema abonnieren
+# Um Updates für einen bestimmten Task zu erhalten, muss der Client das entsprechende Topic abonnieren.
+# Beispiel für Task mit ID 1:
+#Topic: /topic/tasks/1/updates
+
+# 3. Nachrichten empfangen
+# Das Backend sendet bei bestimmten Aktionen automatisch eine JSON-Nachricht an das Topic.
+
+# Beispiel-Nachricht nach "completeStep":
+# {
+#   "message": "Arbeitsschritt 'Analyse und Design' wurde abgeschlossen.",
+#   "taskId": 1,
+#   "completedStepId": 1,
+#   "newOverallTaskStatus": "IN_PROGRESS"
+# }
+
+# Beispiel-Nachricht nach "setManualPriority":
+# {
+#   "message": "Die Priorität für Schritt 'Implementierung' wurde manuell geändert.",
+#   "taskStepId": 2,
+#   "newPriority": "IMMEDIATE"
+# }
