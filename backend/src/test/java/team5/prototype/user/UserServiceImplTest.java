@@ -5,6 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import team5.prototype.dto.CreateUserRequestDto;
 import team5.prototype.security.TenantProvider;
 import team5.prototype.tenant.Tenant;
@@ -16,8 +17,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceImplTest {
@@ -30,6 +30,9 @@ class UserServiceImplTest {
 
     @Mock
     private TenantProvider tenantProvider;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -59,12 +62,71 @@ class UserServiceImplTest {
 
         when(tenantProvider.getCurrentTenantId()).thenReturn(2L);
         when(tenantRepository.findById(2L)).thenReturn(Optional.of(tenant));
+        when(passwordEncoder.encode("secret")).thenReturn("secret");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         User saved = userService.createUser(request);
 
         assertThat(saved.getTenant()).isEqualTo(tenant);
         assertThat(saved.getPasswordHash()).isEqualTo("secret");
+    }
+
+    @Test
+    void createUserEncodesPasswordWhenEncoderAvailable() {
+        CreateUserRequestDto request = new CreateUserRequestDto();
+        request.setUsername("alex");
+        request.setEmail("alex@example.com");
+        request.setPassword("secret");
+
+        Tenant tenant = Tenant.builder().id(2L).name("t2").build();
+
+        when(tenantProvider.getCurrentTenantId()).thenReturn(2L);
+        when(tenantRepository.findById(2L)).thenReturn(Optional.of(tenant));
+        when(passwordEncoder.encode("secret")).thenReturn("hashed");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User saved = userService.createUser(request);
+
+        assertThat(saved.getPasswordHash()).isEqualTo("hashed");
+    }
+
+    @Test
+    void createUserUsesPlainPasswordWhenEncoderMissing() {
+        CreateUserRequestDto request = new CreateUserRequestDto();
+        request.setUsername("alex");
+        request.setEmail("alex@example.com");
+        request.setPassword("secret");
+
+        Tenant tenant = Tenant.builder().id(2L).name("t2").build();
+
+        UserServiceImpl localService = new UserServiceImpl(userRepository, tenantRepository, tenantProvider);
+
+        when(tenantProvider.getCurrentTenantId()).thenReturn(2L);
+        when(tenantRepository.findById(2L)).thenReturn(Optional.of(tenant));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User saved = localService.createUser(request);
+
+        assertThat(saved.getPasswordHash()).isEqualTo("secret");
+    }
+
+    @Test
+    void createUserUsesProvidedTenantIdWhenPresent() {
+        CreateUserRequestDto request = new CreateUserRequestDto();
+        request.setTenantId(9L);
+        request.setUsername("alex");
+        request.setEmail("alex@example.com");
+        request.setPassword("secret");
+
+        Tenant tenant = Tenant.builder().id(9L).name("t9").build();
+
+        when(tenantRepository.findById(9L)).thenReturn(Optional.of(tenant));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User saved = userService.createUser(request);
+
+        assertThat(saved.getTenant()).isEqualTo(tenant);
+        verifyNoInteractions(tenantProvider);
     }
 
     @Test
@@ -77,6 +139,18 @@ class UserServiceImplTest {
         List<User> users = userService.getAllUsers();
 
         assertThat(users).containsExactly(user);
+    }
+
+    @Test
+    void getUserByIdReturnsOptional() {
+        User user = User.builder().id(5L).username("alex").build();
+
+        when(tenantProvider.getCurrentTenantId()).thenReturn(1L);
+        when(userRepository.findByIdAndTenant_Id(5L, 1L)).thenReturn(Optional.of(user));
+
+        Optional<User> result = userService.getUserById(5L);
+
+        assertThat(result).contains(user);
     }
 
     @Test

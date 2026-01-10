@@ -176,6 +176,30 @@ class TaskServiceImplTest {
     }
 
     @Test
+    void completeStepThrowsWhenUserLacksRequiredRole() {
+        Role requiredRole = Role.builder().id(2L).name("DEV").build();
+        Role otherRole = Role.builder().id(3L).name("QA").build();
+        User assigned = User.builder().id(10L).roles(Set.of(otherRole)).build();
+        WorkflowStep workflowStep = WorkflowStep.builder().name("Review").requiredRole(requiredRole).build();
+        TaskStep step = TaskStep.builder()
+                .id(2L)
+                .assignedUser(assigned)
+                .status(TaskStepStatus.ASSIGNED)
+                .workflowStep(workflowStep)
+                .build();
+        Task task = Task.builder()
+                .id(1L)
+                .taskSteps(List.of(step))
+                .build();
+        step.setTask(task);
+
+        when(taskRepository.findByIdAndTenant_Id(1L, 5L)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> taskService.completeStep(1L, 2L, 10L))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
     void completeStepDoesNothingWhenAlreadyCompleted() {
         Role role = Role.builder().id(2L).name("DEV").build();
         User assigned = User.builder().id(10L).roles(Set.of(role)).build();
@@ -278,6 +302,54 @@ class TaskServiceImplTest {
     }
 
     @Test
+    void getAllTasksAsDtoHandlesNullStatusAndSteps() {
+        Task task = Task.builder()
+                .id(1L)
+                .title("Task")
+                .status(null)
+                .taskSteps(null)
+                .build();
+
+        when(taskRepository.findAllByTenant_Id(5L)).thenReturn(List.of(task));
+
+        List<TaskDto> result = taskService.getAllTasksAsDto();
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getStatus()).isNull();
+        assertThat(result.get(0).getSteps()).isNull();
+    }
+
+    @Test
+    void getTaskByIdAsDtoMapsStepsWithoutAssignedUser() {
+        WorkflowStep wfStep = WorkflowStep.builder()
+                .id(101L)
+                .name("Step")
+                .sequenceOrder(1)
+                .build();
+        TaskStep step = TaskStep.builder()
+                .id(11L)
+                .workflowStep(wfStep)
+                .status(null)
+                .assignedUser(null)
+                .build();
+        Task task = Task.builder()
+                .id(1L)
+                .title("Task")
+                .status(TaskStatus.NOT_STARTED)
+                .taskSteps(List.of(step))
+                .build();
+
+        when(taskRepository.findByIdAndTenant_Id(1L, 5L)).thenReturn(Optional.of(task));
+
+        Optional<TaskDto> result = taskService.getTaskByIdAsDto(1L);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getSteps()).hasSize(1);
+        assertThat(result.get().getSteps().get(0).getAssignedUsername()).isNull();
+        assertThat(result.get().getSteps().get(0).getStatus()).isNull();
+    }
+
+    @Test
     void createTaskThrowsWhenDeadlineTooEarly() {
         WorkflowStep step = WorkflowStep.builder()
                 .id(101L)
@@ -298,6 +370,32 @@ class TaskServiceImplTest {
 
         assertThatThrownBy(() -> taskService.createTaskFromDefinition(requestDto))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void createTaskThrowsWhenNoUserAvailableForRole() {
+        Role role = Role.builder().id(1L).name("DEV").build();
+        WorkflowStep step = WorkflowStep.builder()
+                .id(101L)
+                .sequenceOrder(1)
+                .durationHours(1)
+                .requiredRole(role)
+                .build();
+        definition.setSteps(List.of(step));
+
+        TaskDto requestDto = new TaskDto();
+        requestDto.setWorkflowDefinitionId(definition.getId());
+        requestDto.setTitle("t");
+        requestDto.setDescription("d");
+        requestDto.setDeadline(LocalDateTime.now().plusHours(2));
+        requestDto.setCreatedById(creator.getId());
+
+        when(definitionRepository.findByIdAndTenant_Id(definition.getId(), 5L)).thenReturn(Optional.of(definition));
+        when(userRepository.findByIdAndTenant_Id(creator.getId(), 5L)).thenReturn(Optional.of(creator));
+        when(userRepository.findActiveUsersByRoleAndTenant("DEV", 5L)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> taskService.createTaskFromDefinition(requestDto))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -341,6 +439,88 @@ class TaskServiceImplTest {
         assertThat(saved.getTaskSteps().get(0).getStatus()).isEqualTo(TaskStepStatus.ASSIGNED);
         assertThat(saved.getTaskSteps().get(0).getAssignedAt()).isNotNull();
         assertThat(saved.getTaskSteps().get(1).getStatus()).isEqualTo(TaskStepStatus.WAITING);
+    }
+
+    @Test
+    void createTaskPrefersAvailableUserWithNoActiveTasks() {
+        Role role = Role.builder().id(1L).name("DEV").build();
+        WorkflowStep step = WorkflowStep.builder()
+                .id(101L)
+                .name("Only")
+                .sequenceOrder(1)
+                .durationHours(1)
+                .requiredRole(role)
+                .build();
+        definition.setSteps(List.of(step));
+
+        TaskDto requestDto = new TaskDto();
+        requestDto.setWorkflowDefinitionId(definition.getId());
+        requestDto.setTitle("t");
+        requestDto.setDescription("d");
+        requestDto.setDeadline(LocalDateTime.now().plusHours(2));
+        requestDto.setCreatedById(creator.getId());
+
+        User available = User.builder().id(22L).username("free").build();
+        User busy = User.builder().id(23L).username("busy").build();
+        TaskStep busyStep = TaskStep.builder()
+                .task(Task.builder().deadline(LocalDateTime.now().plusHours(5)).build())
+                .build();
+
+        when(definitionRepository.findByIdAndTenant_Id(definition.getId(), 5L)).thenReturn(Optional.of(definition));
+        when(userRepository.findByIdAndTenant_Id(creator.getId(), 5L)).thenReturn(Optional.of(creator));
+        when(userRepository.findActiveUsersByRoleAndTenant("DEV", 5L)).thenReturn(List.of(available, busy));
+        when(taskStepRepository.findActiveTaskStepsByUser(available.getId())).thenReturn(List.of());
+        when(taskStepRepository.findActiveTaskStepsByUser(busy.getId())).thenReturn(List.of(busyStep));
+        when(priorityService.calculatePriority(any(TaskStep.class))).thenReturn(Priority.MEDIUM_TERM);
+        when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Task saved = taskService.createTaskFromDefinition(requestDto);
+
+        assertThat(saved.getTaskSteps()).hasSize(1);
+        assertThat(saved.getTaskSteps().get(0).getAssignedUser()).isEqualTo(available);
+    }
+
+    @Test
+    void createTaskSelectsAssigneeWithLatestDeadlineWhenTied() {
+        Role role = Role.builder().id(1L).name("DEV").build();
+        WorkflowStep step = WorkflowStep.builder()
+                .id(101L)
+                .name("Only")
+                .sequenceOrder(1)
+                .durationHours(1)
+                .requiredRole(role)
+                .build();
+        definition.setSteps(List.of(step));
+
+        TaskDto requestDto = new TaskDto();
+        requestDto.setWorkflowDefinitionId(definition.getId());
+        requestDto.setTitle("t");
+        requestDto.setDescription("d");
+        requestDto.setDeadline(LocalDateTime.now().plusHours(3));
+        requestDto.setCreatedById(creator.getId());
+
+        User earlyUser = User.builder().id(22L).username("early").build();
+        User lateUser = User.builder().id(23L).username("late").build();
+
+        TaskStep earlyStep = TaskStep.builder()
+                .task(Task.builder().deadline(LocalDateTime.now().plusHours(2)).build())
+                .build();
+        TaskStep lateStep = TaskStep.builder()
+                .task(Task.builder().deadline(LocalDateTime.now().plusHours(5)).build())
+                .build();
+
+        when(definitionRepository.findByIdAndTenant_Id(definition.getId(), 5L)).thenReturn(Optional.of(definition));
+        when(userRepository.findByIdAndTenant_Id(creator.getId(), 5L)).thenReturn(Optional.of(creator));
+        when(userRepository.findActiveUsersByRoleAndTenant("DEV", 5L)).thenReturn(List.of(earlyUser, lateUser));
+        when(taskStepRepository.findActiveTaskStepsByUser(earlyUser.getId())).thenReturn(List.of(earlyStep));
+        when(taskStepRepository.findActiveTaskStepsByUser(lateUser.getId())).thenReturn(List.of(lateStep));
+        when(priorityService.calculatePriority(any(TaskStep.class))).thenReturn(Priority.MEDIUM_TERM);
+        when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Task saved = taskService.createTaskFromDefinition(requestDto);
+
+        assertThat(saved.getTaskSteps()).hasSize(1);
+        assertThat(saved.getTaskSteps().get(0).getAssignedUser()).isEqualTo(lateUser);
     }
 
     @Test
@@ -475,5 +655,253 @@ class TaskServiceImplTest {
         assertThat(details.completedSteps()).isEqualTo(0);
         assertThat(details.steps().get(0).dueDate()).isEqualTo(deadline.minusHours(3));
         assertThat(details.steps().get(0).assigneeName()).isEqualTo("Ada Lovelace");
+    }
+
+    @Test
+    void getTaskDetailsUsesUsernameWhenNameMissing() {
+        Role role = Role.builder().id(1L).name("DEV").build();
+        WorkflowStep wfStep = WorkflowStep.builder()
+                .id(101L)
+                .name("Step")
+                .sequenceOrder(1)
+                .durationHours(1)
+                .requiredRole(role)
+                .build();
+        WorkflowDefinition wf = WorkflowDefinition.builder()
+                .steps(List.of(wfStep))
+                .build();
+
+        User assignee = User.builder().username("ada").firstName(" ").lastName(" ").build();
+        TaskStep step = TaskStep.builder()
+                .id(11L)
+                .status(TaskStepStatus.ASSIGNED)
+                .priority(Priority.IMMEDIATE)
+                .assignedUser(assignee)
+                .workflowStep(wfStep)
+                .build();
+        Task task = Task.builder()
+                .id(1L)
+                .title("Task")
+                .deadline(LocalDateTime.now().plusHours(2))
+                .workflowDefinition(wf)
+                .taskSteps(List.of(step))
+                .build();
+        step.setTask(task);
+
+        when(taskRepository.findByIdAndTenant_Id(1L, 5L)).thenReturn(Optional.of(task));
+
+        TaskDetailsDto details = taskService.getTaskDetails(1L);
+
+        assertThat(details.steps().get(0).assigneeName()).isEqualTo("ada");
+    }
+
+    @Test
+    void getTaskDetailsReturnsNullAssigneeWhenMissing() {
+        Role role = Role.builder().id(1L).name("DEV").build();
+        WorkflowStep wfStep = WorkflowStep.builder()
+                .id(101L)
+                .name("Step")
+                .sequenceOrder(1)
+                .durationHours(1)
+                .requiredRole(role)
+                .build();
+        WorkflowDefinition wf = WorkflowDefinition.builder()
+                .steps(List.of(wfStep))
+                .build();
+
+        TaskStep step = TaskStep.builder()
+                .id(11L)
+                .status(TaskStepStatus.ASSIGNED)
+                .priority(Priority.IMMEDIATE)
+                .assignedUser(null)
+                .workflowStep(wfStep)
+                .build();
+        Task task = Task.builder()
+                .id(1L)
+                .title("Task")
+                .deadline(LocalDateTime.now().plusHours(2))
+                .workflowDefinition(wf)
+                .taskSteps(List.of(step))
+                .build();
+        step.setTask(task);
+
+        when(taskRepository.findByIdAndTenant_Id(1L, 5L)).thenReturn(Optional.of(task));
+
+        TaskDetailsDto details = taskService.getTaskDetails(1L);
+
+        assertThat(details.steps().get(0).assigneeName()).isNull();
+    }
+
+    @Test
+    void getTaskDetailsReturnsNullPriorityWhenAllStepsCompleted() {
+        Role role = Role.builder().id(1L).name("DEV").build();
+        WorkflowStep wfStep = WorkflowStep.builder()
+                .id(101L)
+                .name("Step")
+                .sequenceOrder(1)
+                .durationHours(1)
+                .requiredRole(role)
+                .build();
+        WorkflowDefinition wf = WorkflowDefinition.builder()
+                .steps(List.of(wfStep))
+                .build();
+
+        TaskStep step = TaskStep.builder()
+                .id(11L)
+                .status(TaskStepStatus.COMPLETED)
+                .priority(Priority.IMMEDIATE)
+                .workflowStep(wfStep)
+                .build();
+        Task task = Task.builder()
+                .id(1L)
+                .title("Task")
+                .deadline(LocalDateTime.now().plusHours(2))
+                .workflowDefinition(wf)
+                .taskSteps(List.of(step))
+                .build();
+        step.setTask(task);
+
+        when(taskRepository.findByIdAndTenant_Id(1L, 5L)).thenReturn(Optional.of(task));
+
+        TaskDetailsDto details = taskService.getTaskDetails(1L);
+
+        assertThat(details.priority()).isNull();
+    }
+
+    @Test
+    void getTaskDetailsReturnsNullDueDateWhenDeadlineMissing() {
+        Role role = Role.builder().id(1L).name("DEV").build();
+        WorkflowStep wfStep = WorkflowStep.builder()
+                .id(101L)
+                .name("Step")
+                .sequenceOrder(1)
+                .durationHours(1)
+                .requiredRole(role)
+                .build();
+        WorkflowDefinition wf = WorkflowDefinition.builder()
+                .steps(List.of(wfStep))
+                .build();
+
+        TaskStep step = TaskStep.builder()
+                .id(11L)
+                .status(TaskStepStatus.ASSIGNED)
+                .priority(Priority.IMMEDIATE)
+                .workflowStep(wfStep)
+                .build();
+        Task task = Task.builder()
+                .id(1L)
+                .title("Task")
+                .deadline(null)
+                .workflowDefinition(wf)
+                .taskSteps(List.of(step))
+                .build();
+        step.setTask(task);
+
+        when(taskRepository.findByIdAndTenant_Id(1L, 5L)).thenReturn(Optional.of(task));
+
+        TaskDetailsDto details = taskService.getTaskDetails(1L);
+
+        assertThat(details.steps().get(0).dueDate()).isNull();
+    }
+
+    @Test
+    void getTaskProgressCountsCompletedSteps() {
+        TaskStep completed = TaskStep.builder().status(TaskStepStatus.COMPLETED).build();
+        TaskStep assigned = TaskStep.builder().status(TaskStepStatus.ASSIGNED).build();
+        Task task = Task.builder()
+                .id(1L)
+                .title("Task")
+                .deadline(LocalDateTime.now().plusHours(2))
+                .status(TaskStatus.IN_PROGRESS)
+                .taskSteps(List.of(completed, assigned))
+                .build();
+
+        when(taskRepository.findByIdAndTenant_Id(1L, 5L)).thenReturn(Optional.of(task));
+
+        TaskProgress progress = taskService.getTaskProgress(1L);
+
+        assertThat(progress.totalSteps()).isEqualTo(2);
+        assertThat(progress.completedSteps()).isEqualTo(1);
+        assertThat(progress.status()).isEqualTo(TaskStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void completeStepCompletesTaskWhenFinalStep() {
+        Role role = Role.builder().id(2L).name("DEV").build();
+        User assigned = User.builder().id(10L).roles(Set.of(role)).build();
+        WorkflowStep wfStep = WorkflowStep.builder()
+                .name("Only")
+                .sequenceOrder(1)
+                .requiredRole(role)
+                .build();
+        TaskStep step = TaskStep.builder()
+                .id(2L)
+                .assignedUser(assigned)
+                .status(TaskStepStatus.ASSIGNED)
+                .workflowStep(wfStep)
+                .build();
+        Task task = Task.builder()
+                .id(1L)
+                .status(TaskStatus.NOT_STARTED)
+                .currentStepIndex(0)
+                .taskSteps(new ArrayList<>(List.of(step)))
+                .tenant(Tenant.builder().id(5L).name("t1").build())
+                .build();
+        step.setTask(task);
+
+        when(taskRepository.findByIdAndTenant_Id(1L, 5L)).thenReturn(Optional.of(task));
+        when(taskRepository.save(task)).thenReturn(task);
+
+        taskService.completeStep(1L, 2L, 10L);
+
+        assertThat(task.getStatus()).isEqualTo(TaskStatus.COMPLETED);
+        assertThat(task.getCompletedAt()).isNotNull();
+        assertThat(task.getCurrentStepIndex()).isEqualTo(1);
+    }
+
+    @Test
+    void completeStepKeepsInProgressStatusWhenAlreadyStarted() {
+        Role role = Role.builder().id(2L).name("DEV").build();
+        User assigned = User.builder().id(10L).roles(Set.of(role)).build();
+        WorkflowStep wfStep1 = WorkflowStep.builder()
+                .name("First")
+                .sequenceOrder(1)
+                .requiredRole(role)
+                .build();
+        WorkflowStep wfStep2 = WorkflowStep.builder()
+                .name("Second")
+                .sequenceOrder(2)
+                .requiredRole(role)
+                .build();
+        TaskStep step1 = TaskStep.builder()
+                .id(2L)
+                .assignedUser(assigned)
+                .status(TaskStepStatus.ASSIGNED)
+                .workflowStep(wfStep1)
+                .build();
+        TaskStep step2 = TaskStep.builder()
+                .id(3L)
+                .assignedUser(assigned)
+                .status(TaskStepStatus.WAITING)
+                .workflowStep(wfStep2)
+                .build();
+        Task task = Task.builder()
+                .id(1L)
+                .status(TaskStatus.IN_PROGRESS)
+                .currentStepIndex(0)
+                .taskSteps(new ArrayList<>(List.of(step1, step2)))
+                .tenant(Tenant.builder().id(5L).name("t1").build())
+                .build();
+        step1.setTask(task);
+        step2.setTask(task);
+
+        when(taskRepository.findByIdAndTenant_Id(1L, 5L)).thenReturn(Optional.of(task));
+        when(taskRepository.save(task)).thenReturn(task);
+        when(priorityService.calculatePriority(any(TaskStep.class))).thenReturn(Priority.MEDIUM_TERM);
+
+        taskService.completeStep(1L, 2L, 10L);
+
+        assertThat(task.getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(task.getCurrentStepIndex()).isEqualTo(1);
     }
 }

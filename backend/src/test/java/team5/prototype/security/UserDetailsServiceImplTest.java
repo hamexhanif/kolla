@@ -53,6 +53,20 @@ class UserDetailsServiceImplTest {
     }
 
     @Test
+    void loadUserByUsernameHandlesEmptyRoles() {
+        User user = User.builder()
+                .email("user@example.com")
+                .passwordHash("hash")
+                .build();
+
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+
+        UserDetails details = service.loadUserByUsername("user@example.com");
+
+        assertThat(details.getAuthorities()).isEmpty();
+    }
+
+    @Test
     void loadUserByUsernameThrowsWhenMissing() {
         when(userRepository.findByEmail("missing@example.com")).thenReturn(Optional.empty());
 

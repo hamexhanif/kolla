@@ -90,6 +90,21 @@ class TaskStepServiceImplTest {
     }
 
     @Test
+    void assignTaskStepKeepsExistingAssignedAt() {
+        LocalDateTime assignedAt = LocalDateTime.now().minusDays(1);
+        taskStep.setAssignedAt(assignedAt);
+
+        when(tenantProvider.getCurrentTenantId()).thenReturn(5L);
+        when(taskStepRepository.findByIdAndTask_Tenant_Id(1L, 5L)).thenReturn(Optional.of(taskStep));
+        when(userRepository.findByIdAndTenant_Id(10L, 5L)).thenReturn(Optional.of(user));
+        when(taskStepRepository.save(any(TaskStep.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TaskStep result = taskStepService.assignTaskStepToUser(1L, 10L);
+
+        assertThat(result.getAssignedAt()).isEqualTo(assignedAt);
+    }
+
+    @Test
     void assignTaskStepThrowsWhenStepMissing() {
         when(tenantProvider.getCurrentTenantId()).thenReturn(5L);
         when(taskStepRepository.findByIdAndTask_Tenant_Id(1L, 5L)).thenReturn(Optional.empty());
@@ -151,6 +166,20 @@ class TaskStepServiceImplTest {
     }
 
     @Test
+    void setManualPriorityIncludesAssignedUsername() {
+        User assigned = User.builder().id(12L).username("alex").build();
+        taskStep.setAssignedUser(assigned);
+
+        when(tenantProvider.getCurrentTenantId()).thenReturn(5L);
+        when(taskStepRepository.findByIdAndTask_Tenant_Id(1L, 5L)).thenReturn(Optional.of(taskStep));
+        when(taskStepRepository.save(any(TaskStep.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TaskStepDto result = taskStepService.setManualPriorityAndConvertToDto(1L, 2);
+
+        assertThat(result.getAssignedUsername()).isEqualTo("alex");
+    }
+
+    @Test
     void setManualPrioritySendsNotificationPayload() {
         when(tenantProvider.getCurrentTenantId()).thenReturn(5L);
         when(taskStepRepository.findByIdAndTask_Tenant_Id(1L, 5L)).thenReturn(Optional.of(taskStep));
@@ -177,6 +206,20 @@ class TaskStepServiceImplTest {
         List<TaskStep> result = taskStepService.getActiveTaskStepsByUser(10L);
 
         assertThat(result).containsExactly(taskStep);
+    }
+
+    @Test
+    void getActorDashboardItemsWithoutFiltersMapsSteps() {
+        List<TaskStep> steps = List.of(taskStep);
+        when(tenantProvider.getCurrentTenantId()).thenReturn(5L);
+        when(userRepository.findByIdAndTenant_Id(10L, 5L)).thenReturn(Optional.of(user));
+        when(taskStepRepository.findByAssignedUserIdAndStatusNotAndTask_Tenant_Id(
+                10L, TaskStepStatus.COMPLETED, 5L)).thenReturn(steps);
+
+        List<ActorDashboardItemDto> result = taskStepService.getActorDashboardItems(10L);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).taskId()).isEqualTo(42L);
     }
 
     @Test
@@ -226,6 +269,122 @@ class TaskStepServiceImplTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).taskId()).isEqualTo(99L);
         assertThat(result.get(0).stepName()).isEqualTo("Review Document");
+    }
+
+    @Test
+    void getActorDashboardItemsIgnoresNullFilters() {
+        Task task = Task.builder()
+                .id(100L)
+                .title("Task One")
+                .deadline(LocalDateTime.now().plusDays(1))
+                .status(TaskStatus.NOT_STARTED)
+                .tenant(tenant)
+                .build();
+        WorkflowStep workflowStep = WorkflowStep.builder()
+                .id(90L)
+                .name("Review Document")
+                .sequenceOrder(1)
+                .build();
+        TaskStep step = TaskStep.builder()
+                .id(2L)
+                .task(task)
+                .workflowStep(workflowStep)
+                .status(TaskStepStatus.ASSIGNED)
+                .priority(Priority.MEDIUM_TERM)
+                .assignedAt(LocalDateTime.now())
+                .build();
+
+        when(tenantProvider.getCurrentTenantId()).thenReturn(5L);
+        when(userRepository.findByIdAndTenant_Id(10L, 5L)).thenReturn(Optional.of(user));
+        when(taskStepRepository.findByAssignedUserIdAndStatusNotAndTask_Tenant_Id(10L, TaskStepStatus.COMPLETED, 5L))
+                .thenReturn(List.of(step));
+
+        List<ActorDashboardItemDto> result = taskStepService.getActorDashboardItems(
+                10L,
+                null,
+                null,
+                null
+        );
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).taskId()).isEqualTo(100L);
+    }
+
+    @Test
+    void getActorDashboardItemsIgnoresBlankQuery() {
+        Task task = Task.builder()
+                .id(102L)
+                .title("Task One")
+                .deadline(LocalDateTime.now().plusDays(1))
+                .status(TaskStatus.NOT_STARTED)
+                .tenant(tenant)
+                .build();
+        WorkflowStep workflowStep = WorkflowStep.builder()
+                .id(92L)
+                .name("Review Document")
+                .sequenceOrder(1)
+                .build();
+        TaskStep step = TaskStep.builder()
+                .id(4L)
+                .task(task)
+                .workflowStep(workflowStep)
+                .status(TaskStepStatus.ASSIGNED)
+                .priority(Priority.MEDIUM_TERM)
+                .assignedAt(LocalDateTime.now())
+                .build();
+
+        when(tenantProvider.getCurrentTenantId()).thenReturn(5L);
+        when(userRepository.findByIdAndTenant_Id(10L, 5L)).thenReturn(Optional.of(user));
+        when(taskStepRepository.findByAssignedUserIdAndStatusNotAndTask_Tenant_Id(10L, TaskStepStatus.COMPLETED, 5L))
+                .thenReturn(List.of(step));
+
+        List<ActorDashboardItemDto> result = taskStepService.getActorDashboardItems(
+                10L,
+                null,
+                null,
+                "   "
+        );
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).taskId()).isEqualTo(102L);
+    }
+
+    @Test
+    void getActorDashboardItemsFiltersOutWhenQueryDoesNotMatch() {
+        Task task = Task.builder()
+                .id(101L)
+                .title(null)
+                .deadline(LocalDateTime.now().plusDays(1))
+                .status(TaskStatus.NOT_STARTED)
+                .tenant(tenant)
+                .build();
+        WorkflowStep workflowStep = WorkflowStep.builder()
+                .id(91L)
+                .name(null)
+                .sequenceOrder(1)
+                .build();
+        TaskStep step = TaskStep.builder()
+                .id(3L)
+                .task(task)
+                .workflowStep(workflowStep)
+                .status(TaskStepStatus.ASSIGNED)
+                .priority(Priority.MEDIUM_TERM)
+                .assignedAt(LocalDateTime.now())
+                .build();
+
+        when(tenantProvider.getCurrentTenantId()).thenReturn(5L);
+        when(userRepository.findByIdAndTenant_Id(10L, 5L)).thenReturn(Optional.of(user));
+        when(taskStepRepository.findByAssignedUserIdAndStatusNotAndTask_Tenant_Id(10L, TaskStepStatus.COMPLETED, 5L))
+                .thenReturn(List.of(step));
+
+        List<ActorDashboardItemDto> result = taskStepService.getActorDashboardItems(
+                10L,
+                null,
+                null,
+                "needle"
+        );
+
+        assertThat(result).isEmpty();
     }
 
     @Test

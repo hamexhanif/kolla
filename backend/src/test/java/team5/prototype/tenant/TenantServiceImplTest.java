@@ -13,8 +13,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TenantServiceImplTest {
@@ -77,12 +76,31 @@ class TenantServiceImplTest {
     }
 
     @Test
+    void getTenantByIdReturnsEmptyWhenTenantMismatch() {
+        when(tenantProvider.getCurrentTenantId()).thenReturn(1L);
+
+        Optional<Tenant> result = tenantService.getTenantById(2L);
+
+        assertThat(result).isEmpty();
+        verify(tenantRepository, never()).findById(2L);
+    }
+
+    @Test
     void updateTenantThrowsWhenMissing() {
         when(tenantProvider.getCurrentTenantId()).thenReturn(7L);
         when(tenantRepository.findById(7L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> tenantService.updateTenant(7L, new Tenant()))
                 .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    void updateTenantThrowsWhenTenantMismatch() {
+        when(tenantProvider.getCurrentTenantId()).thenReturn(1L);
+
+        assertThatThrownBy(() -> tenantService.updateTenant(2L, new Tenant()))
+                .isInstanceOf(RuntimeException.class);
+        verify(tenantRepository, never()).findById(2L);
     }
 
     @Test
@@ -117,6 +135,15 @@ class TenantServiceImplTest {
 
         assertThatThrownBy(() -> tenantService.deleteTenant(9L))
                 .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    void deleteTenantThrowsWhenTenantMismatch() {
+        when(tenantProvider.getCurrentTenantId()).thenReturn(1L);
+
+        assertThatThrownBy(() -> tenantService.deleteTenant(2L))
+                .isInstanceOf(RuntimeException.class);
+        verify(tenantRepository, never()).existsById(2L);
     }
 
     @Test

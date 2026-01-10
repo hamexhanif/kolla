@@ -17,8 +17,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class RoleServiceImplTest {
@@ -52,6 +51,19 @@ class RoleServiceImplTest {
 
         assertThat(saved).isEqualTo(role);
         assertThat(saved.getTenant()).isEqualTo(tenant);
+    }
+
+    @Test
+    void createRoleThrowsWhenTenantMissing() {
+        Role role = new Role();
+        role.setName("ADMIN");
+
+        when(tenantProvider.getCurrentTenantId()).thenReturn(1L);
+        when(tenantRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> roleService.createRole(role))
+                .isInstanceOf(RuntimeException.class);
+        verify(roleRepository, never()).save(any(Role.class));
     }
 
     @Test
@@ -98,6 +110,28 @@ class RoleServiceImplTest {
     }
 
     @Test
+    void deleteRoleRemovesExisting() {
+        Role role = new Role();
+        role.setId(7L);
+
+        when(tenantProvider.getCurrentTenantId()).thenReturn(1L);
+        when(roleRepository.findByIdAndTenant_Id(7L, 1L)).thenReturn(Optional.of(role));
+
+        roleService.deleteRole(7L);
+
+        verify(roleRepository).delete(role);
+    }
+
+    @Test
+    void deleteRoleThrowsWhenMissing() {
+        when(tenantProvider.getCurrentTenantId()).thenReturn(1L);
+        when(roleRepository.findByIdAndTenant_Id(7L, 1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> roleService.deleteRole(7L))
+                .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
     void assignRoleToUserAddsRole() {
         User user = User.builder().id(5L).build();
         Role role = new Role();
@@ -113,6 +147,16 @@ class RoleServiceImplTest {
 
         assertThat(user.getRoles()).contains(role);
         verify(userRepository).save(user);
+    }
+
+    @Test
+    void assignRoleToUserThrowsWhenUserMissing() {
+        when(tenantProvider.getCurrentTenantId()).thenReturn(1L);
+        when(userRepository.findByIdAndTenant_Id(5L, 1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> roleService.assignRoleToUser(5L, 7L))
+                .isInstanceOf(RuntimeException.class);
+        verifyNoInteractions(roleRepository);
     }
 
     @Test
