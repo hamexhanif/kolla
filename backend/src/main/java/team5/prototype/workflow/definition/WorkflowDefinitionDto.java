@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import team5.prototype.dto.TenantDto;
+import team5.prototype.tenant.TenantDto;
 import team5.prototype.workflow.step.WorkflowStepDto;
 
 import java.time.LocalDateTime;

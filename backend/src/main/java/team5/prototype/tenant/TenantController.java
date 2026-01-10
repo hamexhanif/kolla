@@ -2,7 +2,6 @@ package team5.prototype.tenant;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import team5.prototype.dto.TenantDto; // WICHTIGER IMPORT
 
 import java.util.List;
 import java.util.stream.Collectors;

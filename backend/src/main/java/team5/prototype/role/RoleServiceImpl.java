@@ -3,7 +3,6 @@ package team5.prototype.role;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team5.prototype.dto.CreateRoleRequestDto;
-import team5.prototype.dto.RoleDto;
 import team5.prototype.tenant.Tenant;
 import team5.prototype.tenant.TenantRepository;
 import team5.prototype.user.User; // Import der User-Klasse

@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import team5.prototype.dto.RoleDto;
+import team5.prototype.role.RoleDto;
 
 @Data
 @NoArgsConstructor

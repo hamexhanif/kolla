@@ -1,4 +1,4 @@
-package team5.prototype.dto;
+package team5.prototype.role;
 
 import lombok.*;
 

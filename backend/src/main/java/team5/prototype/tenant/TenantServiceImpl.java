@@ -1,6 +1,6 @@
 package team5.prototype.tenant;
 import org.springframework.stereotype.Service;
-import team5.prototype.dto.TenantDto;
+
 import java.util.List;
 import java.util.Optional;
 @Service

@@ -1,8 +1,8 @@
 package team5.prototype.workflow.definition;
 
 import org.springframework.stereotype.Service;
-import team5.prototype.dto.RoleDto;
-import team5.prototype.dto.TenantDto;
+import team5.prototype.role.RoleDto;
+import team5.prototype.tenant.TenantDto;
 import team5.prototype.role.Role;
 import team5.prototype.tenant.Tenant;
 import team5.prototype.workflow.step.WorkflowStep;

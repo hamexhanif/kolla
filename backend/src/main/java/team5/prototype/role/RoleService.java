@@ -1,7 +1,6 @@
 package team5.prototype.role;
 
 import team5.prototype.dto.CreateRoleRequestDto;
-import team5.prototype.dto.RoleDto;
 
 import java.util.List;
 import java.util.Optional;

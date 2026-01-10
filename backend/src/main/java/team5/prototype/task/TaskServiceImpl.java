@@ -380,10 +380,10 @@ public class TaskServiceImpl implements TaskService {
     }
 
     private LocalDateTime resolveStepDueDate(TaskStep step) {
-        if (step.getAssignedAt() == null) {
-            return null;
-        }
-        return step.getAssignedAt().plusHours(step.getWorkflowStep().getDurationHours());
+//        if (step.getAssignedAt() == null) {
+//            return null;
+//        }
+        return step.getTask().getDeadline().plusHours(step.getWorkflowStep().getDurationHours());
     }
 
     private String formatAssigneeName(User user) {

@@ -3,7 +3,6 @@ package team5.prototype.role;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import team5.prototype.dto.CreateRoleRequestDto;
-import team5.prototype.dto.RoleDto;
 
 import java.util.List;
 import java.util.Map;

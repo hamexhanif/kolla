@@ -1,4 +1,4 @@
-package team5.prototype.dto;
+package team5.prototype.tenant;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
