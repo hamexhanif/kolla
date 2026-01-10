@@ -286,6 +286,7 @@ public class TaskServiceImpl implements TaskService {
         if (step.getAssignedUser() != null) {
             dto.setAssignedUsername(step.getAssignedUser().getUsername());
         }
+        dto.setPriority(String.valueOf(step.getPriority()));
         return dto;
     }
 
