@@ -3,10 +3,11 @@ package team5.prototype.security;
 public interface AuthService {
     /**
      * Authentifiziert einen Benutzer und gibt bei Erfolg einen Token zurück.
-     * @param email Der Benutzername.
+     *
+     * @param email    Der Benutzername.
      * @param password Das Passwort.
      * @return Ein String, der den JWT-Token repräsentiert.
      */
-    String login(String email, String password);
+    AuthDto login(String email, String password);
 
 }

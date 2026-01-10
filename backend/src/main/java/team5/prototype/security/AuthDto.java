@@ -14,13 +14,19 @@ public class AuthDto {
 
     private String password;
     private String token;
+    private Long userId;
 
-    // Konstruktor für die Antwort (bleibt gleich)
-    public AuthDto(String token) {
+    public AuthDto(String token, Long userId) {
         this.token = token;
+        this.userId = userId;
     }
-
-    // Standard-Konstruktor (bleibt gleich)
-    public AuthDto() {
-    }
+//
+//    // Konstruktor für die Antwort (bleibt gleich)
+//    public AuthDto(String token) {
+//        this.token = token;
+//    }
+//
+//    // Standard-Konstruktor (bleibt gleich)
+//    public AuthDto() {
+//    }
 }

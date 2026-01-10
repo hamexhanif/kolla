@@ -39,14 +39,15 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public String login(String email, String password) {
+    public AuthDto login(String email, String password) {
         // 1. Finde den Benutzer in der Datenbank anhand seiner E-MAIL.
         return userRepository.findByEmail(email)
                 .map(user -> {
                     // 2. Benutzer gefunden. Überprüfe das Passwort mit dem korrekten Encoder.
                     if (passwordEncoder.matches(password, user.getPasswordHash())) {
                         logger.info("Login erfolgreich für: {}", email);
-                        return createToken(user);
+                        String token = createToken(user);
+                        return new AuthDto(token, user.getId());
                     } else {
                         logger.warn("Login-Fehler: Falsches Passwort für: {}", email);
                         return null;
@@ -71,6 +72,7 @@ public class AuthServiceImpl implements AuthService {
         return Jwts.builder()
                 .setSubject(user.getEmail()) // Wir verwenden die E-Mail als "Subject"
                 .claim("roles", roleNames)
+                .claim("userId", user.getId())
                 .setIssuedAt(now)
                 .setExpiration(exp)
                 .signWith(jwtSecretKey, SignatureAlgorithm.HS512)
