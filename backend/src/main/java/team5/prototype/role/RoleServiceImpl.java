@@ -2,7 +2,10 @@ package team5.prototype.role;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import team5.prototype.dto.CreateRoleRequestDto;
 import team5.prototype.dto.RoleDto;
+import team5.prototype.tenant.Tenant;
+import team5.prototype.tenant.TenantRepository;
 import team5.prototype.user.User; // Import der User-Klasse
 import team5.prototype.user.UserRepository; // Import des UserRepository
 
@@ -14,17 +17,27 @@ import java.util.stream.Collectors;
 public class RoleServiceImpl implements RoleService {
 
     private final RoleRepository roleRepository;
+    private final TenantRepository tenantRepository;
     private final UserRepository userRepository; // Wird für assignRoleToUser benötigt
 
-    public RoleServiceImpl(RoleRepository roleRepository, UserRepository userRepository) {
+    public RoleServiceImpl(RoleRepository roleRepository, UserRepository userRepository, TenantRepository tenantRepository) {
         this.roleRepository = roleRepository;
         this.userRepository = userRepository;
+        this.tenantRepository = tenantRepository;
     }
 
     @Override
-    public Role createRole(Role role) {
-        // Hier könnten Validierungen für Tenant, etc. hinzukommen
-        return roleRepository.save(role);
+    public Role createRole(CreateRoleRequestDto requestDto) {
+        // Lade den Tenant anhand der ID aus dem DTO
+        Tenant tenant = tenantRepository.findById(requestDto.getTenantId())
+                .orElseThrow(() -> new RuntimeException("Tenant nicht gefunden"));
+
+        Role newRole = new Role();
+        newRole.setName(requestDto.getName());
+        newRole.setDescription(requestDto.getDescription());
+        newRole.setTenant(tenant);// WICHTIG: Setze den Tenant
+
+        return roleRepository.save(newRole);
     }
 
     @Override
