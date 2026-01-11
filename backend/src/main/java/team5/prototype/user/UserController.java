@@ -8,6 +8,7 @@ import team5.prototype.taskstep.TaskStepRepository;
 import team5.prototype.taskstep.TaskStepService;
 import team5.prototype.taskstep.TaskStepStatus;
 import team5.prototype.role.Role;
+import team5.prototype.user.UpdateUserRequestDto;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -51,9 +52,8 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public UserDto updateUser(@PathVariable Long id, @RequestBody User userDetails) {
-        // HINWEIS: Hier sollte später auch ein DTO verwendet werden
-        User updatedUser = userService.updateUser(id, userDetails);
+    public UserDto updateUser(@PathVariable Long id, @RequestBody UpdateUserRequestDto requestDto) {
+        User updatedUser = userService.updateUser(id, requestDto);
         return convertToDto(updatedUser);
     }
 

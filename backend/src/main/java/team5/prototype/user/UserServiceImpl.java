@@ -7,10 +7,12 @@ import team5.prototype.role.Role;
 import team5.prototype.role.RoleRepository;
 import team5.prototype.tenant.Tenant;
 import team5.prototype.tenant.TenantRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -76,12 +78,23 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User updateUser(Long userId, User userDetails) {
+    @Transactional
+    public User updateUser(Long userId, UpdateUserRequestDto requestDto) {
         return userRepository.findById(userId)
                 .map(existingUser -> {
-                    existingUser.setUsername(userDetails.getUsername());
-                    existingUser.setEmail(userDetails.getEmail());
-                    return userRepository.save(existingUser);
+                    // Update der Basis-Daten aus dem DTO
+                    existingUser.setUsername(requestDto.getUsername());
+                    existingUser.setEmail(requestDto.getEmail());
+
+                    // KORREKTE LOGIK ZUM AKTUALISIEREN DER ROLLEN
+                    if (requestDto.getRoleIds() != null) {
+                        Set<Role> newRoles = new HashSet<>(roleRepository.findAllById(requestDto.getRoleIds()));
+                        existingUser.getRoles().clear(); // Alte Rollen entfernen
+                        existingUser.getRoles().addAll(newRoles); // Neue Rollen hinzufügen
+                    }
+
+                    // Die @Transactional-Annotation kümmert sich um das Speichern
+                    return existingUser;
                 })
                 .orElseThrow(() -> new RuntimeException("Benutzer mit ID " + userId + " nicht gefunden!"));
     }
