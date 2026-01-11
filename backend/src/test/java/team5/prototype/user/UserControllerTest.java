@@ -11,11 +11,14 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import team5.prototype.dto.CreateUserRequestDto;
+import team5.prototype.taskstep.TaskStepRepository;
+import team5.prototype.taskstep.TaskStepService;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -34,6 +37,12 @@ class UserControllerTest {
     @Mock
     private UserService userService;
 
+    @Mock
+    private TaskStepRepository taskStepRepository;
+
+    @Mock
+    private TaskStepService taskStepService;
+
     @InjectMocks
     private UserController userController;
 
@@ -44,6 +53,7 @@ class UserControllerTest {
 
     @Test
     void getAllUsersReturnsDtos() throws Exception {
+        when(taskStepRepository.findAllByAssignedUserId(anyLong())).thenReturn(List.of());
         User user = User.builder()
                 .id(1L)
                 .username("alex")
@@ -69,6 +79,7 @@ class UserControllerTest {
 
     @Test
     void createUserReturnsDto() throws Exception {
+        when(taskStepRepository.findAllByAssignedUserId(anyLong())).thenReturn(List.of());
         CreateUserRequestDto request = new CreateUserRequestDto();
         request.setUsername("alex");
         request.setEmail("alex@example.com");
@@ -92,17 +103,17 @@ class UserControllerTest {
 
     @Test
     void updateUserReturnsDto() throws Exception {
-        User request = User.builder()
-                .username("maria")
-                .email("maria@example.com")
-                .build();
+        when(taskStepRepository.findAllByAssignedUserId(anyLong())).thenReturn(List.of());
+        UpdateUserRequestDto request = new UpdateUserRequestDto();
+        request.setUsername("maria");
+        request.setEmail("maria@example.com");
         User updated = User.builder()
                 .id(12L)
                 .username("maria")
                 .email("maria@example.com")
                 .build();
 
-        when(userService.updateUser(any(Long.class), any(User.class))).thenReturn(updated);
+        when(userService.updateUser(any(Long.class), any(UpdateUserRequestDto.class))).thenReturn(updated);
 
         mockMvc.perform(put("/api/users/12")
                         .contentType(MediaType.APPLICATION_JSON)
