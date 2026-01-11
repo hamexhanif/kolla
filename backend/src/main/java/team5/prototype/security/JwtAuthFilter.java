@@ -35,21 +35,24 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        final String authHeader = request.getHeader("Authorization");
+        System.out.println("\n>>> FILTER START: " + request.getRequestURI());
+        System.out.println(">>> SecurityContext BEFORE: " + SecurityContextHolder.getContext().getAuthentication());
 
-        // Wenn kein Header da ist oder er nicht mit "Bearer " beginnt, überspringen
+        final String authHeader = request.getHeader("Authorization");
+        System.out.println(">>> Authorization Header: '" + authHeader + "'");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            System.out.println(">>> No Bearer token, continuing...");
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
             final String jwt = authHeader.substring(7);
+            System.out.println(">>> Extracted JWT: '" + jwt + "'");  // NEU!
+            System.out.println(">>> JWT Length: " + jwt.length());
             final String email = jwtService.extractEmail(jwt);
 
-            // Wenn wir einen Benutzernamen haben und der Benutzer noch nicht authentifiziert ist
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(email);
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
@@ -57,25 +60,30 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     System.out.println("Request URI: " + request.getRequestURI());
                     System.out.println("User: " + email);
                     System.out.println("Authorities: " + userDetails.getAuthorities());
-                    System.out.println("=====================");
+
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities()
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+
+                    System.out.println(">>> SecurityContext SET TO: " + SecurityContextHolder.getContext().getAuthentication());
+                    System.out.println(">>> Is Authenticated: " + authToken.isAuthenticated());
+                    System.out.println("=====================");
+
                     logger.info("Benutzer '{}' erfolgreich authentifiziert.", email);
-                } else {
-                    logger.warn("Ungültiger JWT-Token für Benutzer '{}' empfangen.", email);
                 }
             }
-        } catch (UsernameNotFoundException e) {
-            logger.error("Benutzer aus JWT nicht in der Datenbank gefunden: {}", e.getMessage());
         } catch (Exception e) {
             logger.error("Fehler bei der JWT-Token-Validierung: {}", e.getMessage());
+            e.printStackTrace();
         }
 
-        filterChain.doFilter(request, response);
-        System.out.println(">>> AFTER filterChain.doFilter");
+        System.out.println(">>> SecurityContext BEFORE filterChain: " + SecurityContextHolder.getContext().getAuthentication());
 
+        filterChain.doFilter(request, response);
+
+        System.out.println(">>> SecurityContext AFTER filterChain: " + SecurityContextHolder.getContext().getAuthentication());
+        System.out.println(">>> FILTER END\n");
     }
 }

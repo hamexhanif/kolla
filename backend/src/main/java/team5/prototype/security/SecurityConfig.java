@@ -26,22 +26,27 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/", "/api/auth/**", "/h2-console/**", "/ws/**").permitAll()
-                        // 2. Manager-spezifische Endpunkte
-                        .requestMatchers("/api/manager/**").hasRole("WORKFLOW_MANAGER")
-                        .requestMatchers(HttpMethod.GET, "/api/users").hasRole("WORKFLOW_MANAGER") // Nur Manager dürfen ALLE User sehen
-                        // 3. Regeln für normale Benutzer
-                        // Jeder authentifizierte Benutzer darf seine EIGENEN Tasks abrufen.
-                        // Spring EL (@) erlaubt uns hier, die userId aus dem Pfad mit dem Namen des eingeloggten Benutzers zu vergleichen.
-                        // (Dies ist fortgeschritten, aber die sauberste Lösung).
-                        // Für den Prototyp ist eine einfachere Regel ausreichend:
+                        // 1. Öffentliche Endpunkte
+                        .requestMatchers("/api/auth/**", "/h2-console/**", "/ws/**").permitAll()
+
+                        // 2. Spezifische Regeln für Akteure
                         .requestMatchers(HttpMethod.GET, "/api/users/{userId}/tasks").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/users/{userId}/dashboard").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/task-steps/*/complete").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/users/dashboard-tasks/{userId}").authenticated()
 
+                        // 3. Spezifische Regeln für Manager (jetzt können sie nichts mehr "stehlen")
+                        .requestMatchers("/api/manager/**").hasRole("WORKFLOW_MANAGER")
+                        .requestMatchers("/api/users/**").hasRole("WORKFLOW_MANAGER")
+                        .requestMatchers("/api/roles/**").hasRole("WORKFLOW_MANAGER")
+                        .requestMatchers("/api/tasks/**").hasRole("WORKFLOW_MANAGER")
+                        .requestMatchers("/api/task-steps/*/set-priority").hasRole("WORKFLOW_MANAGER")
+                        // 4. Alle anderen Requests benötigen mindestens Authentifizierung
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 }

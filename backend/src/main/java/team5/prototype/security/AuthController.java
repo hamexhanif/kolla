@@ -18,13 +18,11 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthDto> login(@RequestBody AuthDto authDto) {
-        // ===================================================================
-        // KORREKTUR: Wir verwenden jetzt getEmail() statt getUsername()
-        // ===================================================================
-        String token = authService.login(authDto.getEmail(), authDto.getPassword());
+        // Call service method that handles all business logic including DB lookup
+        AuthDto response = authService.login(authDto.getEmail(), authDto.getPassword());
 
-        if (token != null) {
-            return ResponseEntity.ok(new AuthDto(token));
+        if (response != null) {
+            return ResponseEntity.ok(response);
         } else {
             return ResponseEntity.status(401).build();
         }

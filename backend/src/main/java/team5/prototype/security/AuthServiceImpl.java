@@ -6,11 +6,11 @@ import io.jsonwebtoken.security.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import team5.prototype.role.Role;
 import team5.prototype.user.User;
 import team5.prototype.user.UserRepository;
-import team5.prototype.role.Role;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -23,25 +23,31 @@ public class AuthServiceImpl implements AuthService {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthServiceImpl.class);
     private final UserRepository userRepository;
-    private final BCryptPasswordEncoder passwordEncoder;
+
+    // KORREKTUR: Wir verwenden den allgemeinen Interface-Typ, nicht die spezifische Implementierung.
+    private final PasswordEncoder passwordEncoder;
+
     private final SecretKey jwtSecretKey;
 
-    public AuthServiceImpl(UserRepository userRepository, @Value("${jwt.secret}") String jwtSecret) {
+    // KORREKTUR: Wir injizieren den zentralen PasswordEncoder von Spring.
+    public AuthServiceImpl(UserRepository userRepository,
+                           PasswordEncoder passwordEncoder,
+                           @Value("${jwt.secret}") String jwtSecret) {
         this.userRepository = userRepository;
-        this.passwordEncoder = new BCryptPasswordEncoder();
-        // Erstellt einen sicheren Schlüssel aus dem String in application.properties
+        this.passwordEncoder = passwordEncoder;
         this.jwtSecretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
     @Override
-    public String login(String email, String password) {
+    public AuthDto login(String email, String password) {
         // 1. Finde den Benutzer in der Datenbank anhand seiner E-MAIL.
         return userRepository.findByEmail(email)
                 .map(user -> {
-                    // 2. Benutzer gefunden. Überprüfe das Passwort.
+                    // 2. Benutzer gefunden. Überprüfe das Passwort mit dem korrekten Encoder.
                     if (passwordEncoder.matches(password, user.getPasswordHash())) {
                         logger.info("Login erfolgreich für: {}", email);
-                        return createToken(user);
+                        String token = createToken(user);
+                        return new AuthDto(token, user.getId());
                     } else {
                         logger.warn("Login-Fehler: Falsches Passwort für: {}", email);
                         return null;
@@ -64,8 +70,9 @@ public class AuthServiceImpl implements AuthService {
                 .collect(Collectors.toList());
 
         return Jwts.builder()
-                .setSubject(user.getEmail()) // Im Token bleibt der Username der "Subject"
+                .setSubject(user.getEmail()) // Wir verwenden die E-Mail als "Subject"
                 .claim("roles", roleNames)
+                .claim("userId", user.getId())
                 .setIssuedAt(now)
                 .setExpiration(exp)
                 .signWith(jwtSecretKey, SignatureAlgorithm.HS512)
