@@ -25,4 +25,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("roleName") String roleName,
             @Param("tenantId") Long tenantId
     );
+
+    @Query("SELECT u FROM User u WHERE u.active = true")
+    List<User> findAllActive();
+
+    @Query("SELECT u FROM User u WHERE u.id = :id AND u.active = true")
+    Optional<User> findByIdAndActive(@Param("id") Long id);
 }

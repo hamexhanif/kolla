@@ -1,5 +1,6 @@
 package team5.prototype.user;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import team5.prototype.dto.CreateUserRequestDto;
@@ -69,12 +70,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        return userRepository.findAllActive();
     }
 
     @Override
     public Optional<User> getUserById(Long userId) {
-        return userRepository.findById(userId);
+        return userRepository.findByIdAndActive(userId);
     }
 
     @Override
@@ -96,14 +97,16 @@ public class UserServiceImpl implements UserService {
                     // Die @Transactional-Annotation kümmert sich um das Speichern
                     return existingUser;
                 })
-                .orElseThrow(() -> new RuntimeException("Benutzer mit ID " + userId + " nicht gefunden!"));
+                .orElseThrow(() -> new EntityNotFoundException("Benutzer mit ID " + userId + " nicht gefunden!"));
     }
 
     @Override
     public void deleteUser(Long userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new RuntimeException("Benutzer mit ID " + userId + " nicht gefunden!");
-        }
-        userRepository.deleteById(userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Benutzer mit ID " + userId + " nicht gefunden!"));
+
+        // Instead of deleting, mark as inactive (soft delete)
+        user.setActive(false);
+        userRepository.save(user);
     }
 }
