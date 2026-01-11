@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import team5.prototype.dto.CreateUserRequestDto;
+import team5.prototype.role.RoleRepository;
 import team5.prototype.security.TenantProvider;
 import team5.prototype.tenant.Tenant;
 import team5.prototype.tenant.TenantRepository;
@@ -30,6 +31,9 @@ class UserServiceImplTest {
 
     @Mock
     private TenantProvider tenantProvider;
+
+    @Mock
+    private RoleRepository roleRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -156,11 +160,12 @@ class UserServiceImplTest {
     @Test
     void updateUserUpdatesFields() {
         User existing = User.builder().id(1L).username("old").email("old@example.com").build();
-        User update = User.builder().username("new").email("new@example.com").build();
+        UpdateUserRequestDto update = new UpdateUserRequestDto();
+        update.setUsername("new");
+        update.setEmail("new@example.com");
 
         when(tenantProvider.getCurrentTenantId()).thenReturn(1L);
         when(userRepository.findByIdAndTenant_Id(1L, 1L)).thenReturn(Optional.of(existing));
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         User result = userService.updateUser(1L, update);
 
@@ -173,7 +178,7 @@ class UserServiceImplTest {
         when(tenantProvider.getCurrentTenantId()).thenReturn(1L);
         when(userRepository.findByIdAndTenant_Id(9L, 1L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> userService.updateUser(9L, new User()))
+        assertThatThrownBy(() -> userService.updateUser(9L, new UpdateUserRequestDto()))
                 .isInstanceOf(RuntimeException.class);
     }
 
