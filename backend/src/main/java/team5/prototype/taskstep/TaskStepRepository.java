@@ -16,7 +16,6 @@ public interface TaskStepRepository extends JpaRepository<TaskStep, Long> {
 
     /**
      * Find all non-completed task steps assigned to a user.
-     * Includes WAITING, ASSIGNED, and IN_PROGRESS statuses.
      */
     @Query("SELECT ts FROM TaskStep ts " +
             "WHERE ts.assignedUser.id = :userId " +

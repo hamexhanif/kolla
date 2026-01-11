@@ -89,7 +89,7 @@ public class TaskServiceImpl implements TaskService {
                 .workflowDefinition(definition)
                 .tenant(definition.getTenant())
                 .createdBy(creator)
-                .status(TaskStatus.NOT_STARTED)
+                .status(TaskStatus.IN_PROGRESS)
                 .currentStepIndex(0)
                 .taskSteps(new ArrayList<>())
                 .build();
@@ -308,10 +308,6 @@ public class TaskServiceImpl implements TaskService {
         nextStep.setStatus(TaskStepStatus.ASSIGNED);
         nextStep.setAssignedAt(now());
         task.setCurrentStepIndex(nextIndex);
-
-        if (task.getStatus() == TaskStatus.NOT_STARTED) {
-            task.setStatus(TaskStatus.IN_PROGRESS);
-        }
     }
 
     private List<TaskStep> buildTaskSteps(Task task, List<WorkflowStep> orderedSteps, Map<Long, Long> overrides) {

@@ -9,15 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import team5.prototype.dto.ActorDashboardItemDto;
 import team5.prototype.notification.NotificationService;
 import team5.prototype.task.TaskService;
-import team5.prototype.user.User;
-import team5.prototype.user.UserRepository;
 
-
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,22 +20,18 @@ import java.util.stream.Stream;
 public class TaskStepServiceImpl implements TaskStepService {
 
     private final TaskStepRepository taskStepRepository;
-    private final UserRepository userRepository;
     private final TaskService taskService;
     private final NotificationService notificationService;
 
-    // KORREKTUR: @Lazy hier, um die zirkuläre Abhängigkeit zu lösen
+    // @Lazy hier, um die zirkuläre Abhängigkeit zu lösen
     public TaskStepServiceImpl(TaskStepRepository taskStepRepository,
-                               UserRepository userRepository,
                                @Lazy TaskService taskService,
                                NotificationService notificationService) {
         this.taskStepRepository = taskStepRepository;
-        this.userRepository = userRepository;
         this.taskService = taskService;
         this.notificationService = notificationService;
     }
 
-    // DIESE METHODE IST KORREKT UND BLEIBT
     @Override
     @Transactional(readOnly = true)
     public List<ActorDashboardItemDto> getActorDashboardItems(Long userId, TaskStepStatus status, Priority priority, String query) {
@@ -68,19 +59,7 @@ public class TaskStepServiceImpl implements TaskStepService {
                 .map(this::toActorDashboardItemDto)
                 .collect(Collectors.toList());
     }
-    @Override
-    @Transactional
-    public TaskStep assignTaskStepToUser(Long taskStepId, Long userId) {
-        TaskStep step = findTaskStep(taskStepId);
-        User user = findUser(userId);
-        step.setAssignedUser(user);
-        step.setStatus(TaskStepStatus.ASSIGNED);
-        if (step.getAssignedAt() == null) {
-            step.setAssignedAt(LocalDateTime.now());
-        }
-        return taskStepRepository.save(step);
-    }
-    // DIESE METHODE IST KORREKT UND BLEIBT
+
     @Override
     @Transactional
     public TaskStepDto setManualPriorityAndConvertToDto(Long taskStepId, int manualPriority) {
@@ -99,11 +78,15 @@ public class TaskStepServiceImpl implements TaskStepService {
         return convertToDto(savedStep);
     }
 
-    // DIESE METHODE IST KORREKT UND BLEIBT
     @Override
     @Transactional
     public void completeTaskStep(Long taskId, Long taskStepId, Long userId) {
         taskService.completeStep(taskId, taskStepId, userId);
+    }
+
+    @Override
+    public List<TaskStep> getAllTaskStepsByUserId(Long userId) {
+        return taskStepRepository.findAllByAssignedUserId(userId);
     }
 
     // --- Private Hilfsmethoden ---
@@ -111,11 +94,6 @@ public class TaskStepServiceImpl implements TaskStepService {
     private TaskStep findTaskStep(Long id) {
         return taskStepRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("TaskStep %d nicht gefunden".formatted(id)));
-    }
-
-    private User findUser(Long id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User %d nicht gefunden".formatted(id)));
     }
 
     private Priority mapManualPriority(int manualPriority) {
