@@ -335,6 +335,7 @@ public class TaskServiceImpl implements TaskService {
     private void refreshPriorityForNotCompletedTaskSteps(Task task) {
         task.getTaskSteps().stream()
                 .filter(step -> step.getStatus() != TaskStepStatus.COMPLETED)
+                .filter(step -> step.getManualPriority() == null)
                 .forEach(step -> step.setPriority(priorityService.calculatePriority(step)));
     }
 
