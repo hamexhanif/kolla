@@ -42,6 +42,11 @@ public class PriorityServiceImpl implements PriorityService {
         return Priority.LONG_TERM;
     }
 
+    @Override
+    public Priority calculatePriority(Task task) {
+        return calculatePriorityByTaskDeadline(task);
+    }
+
     /**
      * HILFSMETHODE: Berechnet die individuelle Deadline für einen TaskStep,
      * indem von der finalen Task-Deadline die Dauer aller nachfolgenden Schritte abgezogen wird.

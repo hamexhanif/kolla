@@ -188,7 +188,7 @@ public class TaskServiceImpl implements TaskService {
         int completedSteps = (int) task.getTaskSteps().stream()
                 .filter(step -> step.getStatus() == TaskStepStatus.COMPLETED)
                 .count();
-        Priority priority = resolveTaskPriority(task);
+        Priority priority = priorityService.calculatePriority(task);
         List<TaskDetailsStepDto> stepDtos = task.getTaskSteps().stream()
                 .sorted(Comparator.comparingInt(step -> step.getWorkflowStep().getSequenceOrder()))
                 .map(this::toTaskDetailsStep)
