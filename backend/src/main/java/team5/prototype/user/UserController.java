@@ -4,11 +4,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import team5.prototype.dto.ActorDashboardItemDto;
 import team5.prototype.dto.CreateUserRequestDto;
-import team5.prototype.taskstep.TaskStepRepository;
+import team5.prototype.taskstep.TaskStep;
 import team5.prototype.taskstep.TaskStepService;
 import team5.prototype.taskstep.TaskStepStatus;
 import team5.prototype.role.Role;
-import team5.prototype.user.UpdateUserRequestDto;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,15 +17,13 @@ import java.util.stream.Collectors;
 public class UserController {
 
     private final UserService userService;
-    private final TaskStepRepository taskStepRepository;
     private final TaskStepService taskStepService; // Abhängigkeit ist korrekt
 
     // Konstruktor ist jetzt sauber
-    public UserController(UserService userService, TaskStepService taskStepService, TaskStepRepository taskStepRepository) {
+    public UserController(UserService userService, TaskStepService taskStepService) {
         System.out.println(">>> USER CONTROLLER WURDE ERSTELLT!");
         this.userService = userService;
         this.taskStepService = taskStepService;
-        this.taskStepRepository = taskStepRepository;
     }
 
     // --- Endpunkte für die User-Verwaltung (CRUD) ---
@@ -86,11 +83,11 @@ public class UserController {
                     .map(Role::getName)
                     .collect(Collectors.toList()));
         }
-        List<team5.prototype.taskstep.TaskStep> allUserSteps = taskStepRepository.findAllByAssignedUserId(user.getId());
+        List<TaskStep> allUserSteps = taskStepService.getAllTaskStepsByUserId(user.getId());
 
-        long assigned = allUserSteps.stream().filter(s -> s.getStatus() != TaskStepStatus.COMPLETED).count();
+        long assigned = allUserSteps.stream().filter(s -> s.getStatus() == TaskStepStatus.WAITING).count();
         long completed = allUserSteps.stream().filter(s -> s.getStatus() == TaskStepStatus.COMPLETED).count();
-        long inProgress = allUserSteps.stream().filter(s -> s.getStatus() == TaskStepStatus.IN_PROGRESS).count();
+        long inProgress = allUserSteps.stream().filter(s -> s.getStatus() == TaskStepStatus.ASSIGNED).count();
 
         dto.setAssignedTasks(assigned);
         dto.setCompletedTasks(completed);

@@ -14,16 +14,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
     Optional<User> findFirstByRoles_NameAndTenant_IdOrderByIdAsc(String roleName, Long tenantId);
 
-    Optional<User> findByIdAndTenant_Id(Long id, Long tenantId);
-    Optional<User> findByUsernameAndTenant_Id(String username, Long tenantId);
-    Optional<User> findByEmailAndTenant_Id(String email, Long tenantId);
-    List<User> findAllByTenant_Id(Long tenantId);
-    boolean existsByIdAndTenant_Id(Long id, Long tenantId);
+    /**
+     * Find all active users with a specific role and tenant.
+     * Results ordered by user ID for consistency.
+     */
+    @Query("SELECT DISTINCT u FROM User u " +
+            "JOIN u.roles r " +
+            "WHERE r.name = :roleName AND u.tenant.id = :tenantId AND u.active = true")
+    List<User> findActiveUsersByRoleAndTenant(
+            @Param("roleName") String roleName,
+            @Param("tenantId") Long tenantId
+    );
 
-    @Query("SELECT u FROM User u JOIN u.roles r " +
-            "WHERE r.name = :roleName " +
-            "AND u.active = true " +
-            "AND u.tenant.id = :tenantId")
-    List<User> findActiveUsersByRoleAndTenant(@Param("roleName") String roleName,
-                                              @Param("tenantId") Long tenantId);
+    @Query("SELECT u FROM User u WHERE u.active = true")
+    List<User> findAllActive();
+
+    @Query("SELECT u FROM User u WHERE u.id = :id AND u.active = true")
+    Optional<User> findByIdAndActive(@Param("id") Long id);
 }

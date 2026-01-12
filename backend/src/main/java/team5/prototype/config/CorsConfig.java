@@ -13,9 +13,29 @@ public class CorsConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**") // Apply to all endpoints
-                        .allowedOrigins("*") // Allow ALL domains (for development/demo)
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS");
+                registry.addMapping("/api/**")
+                        .allowedOrigins(
+                                "https://bailas2310.github.io",
+                                "http://localhost:5173",
+                                "http://localhost:3000",
+                                "http://localhost:8080"
+                        )
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+                        .allowedHeaders("*")
+                        .allowCredentials(true)
+                        .maxAge(3600);
+
+                // Also allow CORS for WebSocket endpoints
+                registry.addMapping("/ws/**")
+                        .allowedOrigins(
+                                "https://bailas2310.github.io",
+                                "http://localhost:5173",
+                                "http://localhost:3000",
+                                "http://localhost:8080"
+                        )
+                        .allowedMethods("GET", "POST", "OPTIONS")
+                        .allowedHeaders("*")
+                        .allowCredentials(true);
             }
         };
     }

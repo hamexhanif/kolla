@@ -13,5 +13,5 @@ public interface TaskStepService {
 
     TaskStepDto setManualPriorityAndConvertToDto(Long taskStepId, int manualPriority);
     void completeTaskStep(Long taskId, Long taskStepId, Long userId);
-    TaskStep assignTaskStepToUser(Long taskStepId, Long userId);
+    List<TaskStep> getAllTaskStepsByUserId(Long userId);
 }
