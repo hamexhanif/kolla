@@ -15,20 +15,13 @@ public class PriorityServiceImpl implements PriorityService {
         Task task = taskStep.getTask();
         LocalDateTime now = LocalDateTime.now();
         long hoursUntilDeadline = Duration.between(now, task.getDeadline()).toHours();
-        if (hoursUntilDeadline <= 0) {
-            return Priority.IMMEDIATE;
+        if (hoursUntilDeadline <= 8) {
+            return Priority.IMMEDIATE; // Sofort (<= 8 Stunden bis Deadline)
         }
-
-        int remainingHours = calculateRemainingHours(task.getTaskSteps());
-        long slackHours = hoursUntilDeadline - remainingHours;
-
-        if (slackHours <= 8) {
-            return Priority.IMMEDIATE;
+        if (hoursUntilDeadline <= 32) {
+            return Priority.MEDIUM_TERM; // Mittelfristig (> 8h und <= 32h bis Deadline)
         }
-        if (slackHours <= 32) {
-            return Priority.MEDIUM_TERM;
-        }
-        return Priority.LONG_TERM;
+        return Priority.LONG_TERM; // Langfristig (> 32h bis Deadline)
     }
 
     private int calculateRemainingHours(List<TaskStep> steps) {
