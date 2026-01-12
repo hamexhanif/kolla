@@ -148,8 +148,6 @@ public class TaskServiceImpl implements TaskService {
         // ===================================================================
         // NEU HINZUGEFUEGT: Benachrichtigung senden
         // ===================================================================
-        // Wir erstellen ein aussagekraeftiges Objekt (Payload), das wir als JSON an das Frontend senden.
-        // Eine Map ist hierfuer sehr flexibel.
         Map<String, Object> notificationPayload = Map.of(
                 "message", String.format("Arbeitsschritt '%s' (ID: %d) wurde abgeschlossen.", step.getWorkflowStep().getName(), stepId),
                 "taskId", taskId,
@@ -157,7 +155,6 @@ public class TaskServiceImpl implements TaskService {
                 "newOverallTaskStatus", task.getStatus().name()
         );
 
-        // Rufe den NotificationService auf, um das Payload an das richtige Topic zu senden.
         notificationService.sendTaskUpdateNotification(taskId, notificationPayload);
     }
 
@@ -222,18 +219,15 @@ public class TaskServiceImpl implements TaskService {
         return new ManagerDashboardDto(openTasks, overdueTasks, dueTodayTasks, rows);
     }
 
-    // NEUE METHODE: Gibt DTOs zurueck statt Entities
     @Override
     @Transactional(readOnly = true)
     public List<TaskDto> getAllTasksAsDto() {
         List<Task> tasks = taskRepository.findAll();
-        // Konvertierung INNERHALB der Transaction
         return tasks.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
-    // NEUE METHODE: Gibt DTO zurueck statt Entity
     @Override
     @Transactional(readOnly = true)
     public Optional<TaskDto> getTaskByIdAsDto(Long taskId) {
@@ -241,7 +235,6 @@ public class TaskServiceImpl implements TaskService {
                 .map(this::convertToDto);
     }
 
-    // ALTE Methoden bleiben fuer Kompatibilitaet
     @Override
     @Transactional(readOnly = true)
     public List<Task> getAllTasks() {
@@ -253,8 +246,6 @@ public class TaskServiceImpl implements TaskService {
     public Optional<Task> getTaskById(Long taskId) {
         return taskRepository.findById(taskId);
     }
-
-    // --- Private Konvertierungs-Hilfsmethoden ---
 
     private TaskDto convertToDto(Task task) {
         TaskDto dto = new TaskDto();
@@ -290,8 +281,6 @@ public class TaskServiceImpl implements TaskService {
         return dto;
     }
 
-    // --- Private Hilfsmethoden ---
-
     private void moveToNextStep(Task task, TaskStep completedStep) {
         List<TaskStep> steps = task.getTaskSteps();
         int completedIndex = steps.indexOf(completedStep);
@@ -317,7 +306,6 @@ public class TaskServiceImpl implements TaskService {
             WorkflowStep workflowStep = orderedSteps.get(index);
             User assignee = resolveAssignee(workflowStep, overrides, task.getTenant().getId());
 
-            // KORREKTUR: Wir setzen hier KEINE Prioritaet mehr, da dies spaeter zentral geschieht.
             TaskStep.TaskStepBuilder builder = TaskStep.builder()
                     .task(task)
                     .workflowStep(workflowStep)
@@ -345,34 +333,22 @@ public class TaskServiceImpl implements TaskService {
         }
 
         String roleName = workflowStep.getRequiredRole().getName();
-
-        // Step 1: Get all users with the required role
         List<User> availableUsers = userRepository.findActiveUsersByRoleAndTenant(roleName, tenantId);
 
         if (availableUsers.isEmpty()) {
             throw new IllegalStateException("Kein Benutzer fuer Rolle %s gefunden".formatted(roleName));
         }
 
-        // Step 2: Find the best assignee using hybrid approach
         return findBestAssignee(availableUsers);
     }
 
-    /**
-     * Find the best assignee using a hybrid approach:
-     * 1. First tries to find a user with no active tasks (available)
-     * 2. If all have tasks, selects the user with:
-     *    a) Least number of active tasks
-     *    b) As a tiebreaker: furthest deadline on their current tasks
-     */
     private User findBestAssignee(List<User> candidates) {
-        // Create a map of user -> their active task steps with task details
         Map<User, List<TaskStep>> userTaskMap = candidates.stream()
                 .collect(Collectors.toMap(
                         user -> user,
                         user -> taskStepRepository.findActiveTaskStepsByUser(user.getId())
                 ));
 
-        // Step 1: Look for completely available users (no active tasks)
         Optional<User> availableUser = userTaskMap.entrySet().stream()
                 .filter(entry -> entry.getValue().isEmpty())
                 .map(Map.Entry::getKey)
@@ -382,21 +358,16 @@ public class TaskServiceImpl implements TaskService {
             return availableUser.get();
         }
 
-        // Step 2: If no one is completely available, sort by:
-        // a) Number of active tasks (ascending)
-        // b) Furthest deadline among their tasks (descending)
         return userTaskMap.entrySet().stream()
                 .sorted((entry1, entry2) -> {
                     List<TaskStep> tasks1 = entry1.getValue();
                     List<TaskStep> tasks2 = entry2.getValue();
 
-                    // First criterion: fewer active tasks
                     int taskCountComparison = Integer.compare(tasks1.size(), tasks2.size());
                     if (taskCountComparison != 0) {
                         return taskCountComparison;
                     }
 
-                    // Second criterion: furthest deadline (later deadline = better)
                     LocalDateTime deadline1 = tasks1.stream()
                             .map(ts -> ts.getTask().getDeadline())
                             .max(LocalDateTime::compareTo)
@@ -407,7 +378,6 @@ public class TaskServiceImpl implements TaskService {
                             .max(LocalDateTime::compareTo)
                             .orElse(LocalDateTime.MIN);
 
-                    // Reverse comparison (descending) for deadline - furthest deadline is better
                     return deadline2.compareTo(deadline1);
                 })
                 .map(Map.Entry::getKey)
@@ -424,13 +394,23 @@ public class TaskServiceImpl implements TaskService {
         return LocalDateTime.now();
     }
 
+    // ===================================================================
+    // KORREKTUR: Diese Methode wurde angepasst, um den Bug zu beheben.
+    // ===================================================================
     private Priority resolveTaskPriority(Task task) {
-        return task.getTaskSteps().stream()
+        // 1. Finde den ersten, noch nicht abgeschlossenen Arbeitsschritt
+        Optional<TaskStep> nextStepOpt = task.getTaskSteps().stream()
                 .filter(step -> step.getStatus() != TaskStepStatus.COMPLETED)
-                .sorted(Comparator.comparingInt(step -> step.getWorkflowStep().getSequenceOrder()))
-                .map(TaskStep::getPriority)
-                .findFirst()
-                .orElse(null);
+                .min(Comparator.comparingInt(step -> step.getWorkflowStep().getSequenceOrder()));
+
+        // 2. WENN ein nächster Schritt existiert...
+        if (nextStepOpt.isPresent()) {
+            // ...rufe den PriorityService auf, um die Priorität in Echtzeit neu zu berechnen.
+            return priorityService.calculatePriority(nextStepOpt.get());
+        }
+
+        // 3. Wenn alle Schritte erledigt sind, hat die Aufgabe keine Priorität mehr.
+        return null;
     }
 
     private ManagerTaskRowDto toManagerTaskRow(Task task) {
@@ -445,13 +425,18 @@ public class TaskServiceImpl implements TaskService {
     private TaskDetailsStepDto toTaskDetailsStep(TaskStep step) {
         String assigneeName = formatAssigneeName(step.getAssignedUser());
         LocalDateTime dueDate = resolveStepDueDate(step);
+
+        // KORREKTUR: Wir berechnen die Priorität für jeden einzelnen Schritt neu,
+        // damit die Anzeige in der Schrittliste auch immer aktuell ist.
+        Priority currentStepPriority = priorityService.calculatePriority(step);
+
         return new TaskDetailsStepDto(
                 step.getId(),
                 step.getWorkflowStep().getName(),
                 step.getStatus(),
                 assigneeName,
                 dueDate,
-                step.getPriority()
+                currentStepPriority
         );
     }
 
@@ -461,14 +446,12 @@ public class TaskServiceImpl implements TaskService {
             return null;
         }
 
-        // Get all steps sorted by sequence order
         List<WorkflowStep> allWorkflowSteps = step.getTask().getWorkflowDefinition().getSteps().stream()
                 .sorted(Comparator.comparingInt(WorkflowStep::getSequenceOrder))
                 .toList();
 
         int currentStepSequence = step.getWorkflowStep().getSequenceOrder();
 
-        // Calculate sum of durations for all steps AFTER the current step
         long remainingDurationHours = allWorkflowSteps.stream()
                 .filter(ws -> ws.getSequenceOrder() > currentStepSequence)
                 .mapToLong(WorkflowStep::getDurationHours)
