@@ -262,6 +262,7 @@ public class TaskServiceImpl implements TaskService {
                     .collect(Collectors.toList());
             dto.setSteps(stepDtos);
         }
+        dto.setPriority(priorityService.calculatePriority(task));
         return dto;
     }
 
