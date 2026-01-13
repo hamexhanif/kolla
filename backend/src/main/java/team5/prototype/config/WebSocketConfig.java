@@ -22,7 +22,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .setAllowedOriginPatterns("*")
                 .withSockJS();
 
-        // Zusätzlich: WebSocket ohne SockJS für native WS-Clients
+        // WebSocket ohne SockJS für native WS-Clients
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*");
     }

@@ -5,11 +5,10 @@ import org.springframework.transaction.annotation.Transactional;
 import team5.prototype.dto.CreateRoleRequestDto;
 import team5.prototype.tenant.Tenant;
 import team5.prototype.tenant.TenantRepository;
-import team5.prototype.user.User; // Import der User-Klasse
-import team5.prototype.user.UserRepository; // Import des UserRepository
+import team5.prototype.user.User;
+import team5.prototype.user.UserRepository;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -17,7 +16,7 @@ public class RoleServiceImpl implements RoleService {
 
     private final RoleRepository roleRepository;
     private final TenantRepository tenantRepository;
-    private final UserRepository userRepository; // Wird für assignRoleToUser benötigt
+    private final UserRepository userRepository;
 
     public RoleServiceImpl(RoleRepository roleRepository, UserRepository userRepository, TenantRepository tenantRepository) {
         this.roleRepository = roleRepository;
@@ -37,16 +36,6 @@ public class RoleServiceImpl implements RoleService {
         newRole.setTenant(tenant);// WICHTIG: Setze den Tenant
 
         return roleRepository.save(newRole);
-    }
-
-    @Override
-    public List<Role> getAllRoles() {
-        return roleRepository.findAll();
-    }
-
-    @Override
-    public Optional<Role> getRoleById(Long roleId) {
-        return roleRepository.findById(roleId);
     }
 
     @Transactional(readOnly = true)
