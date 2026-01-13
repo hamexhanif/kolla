@@ -26,14 +26,13 @@ class TaskControllerTest {
 
     @Test
     void createTaskConvertsToDto() {
-        Task task = Task.builder()
-                .id(1L)
-                .title("t")
-                .deadline(LocalDateTime.now())
-                .status(TaskStatus.IN_PROGRESS)
-                .build();
+        TaskDto serviceDto = new TaskDto();
+        serviceDto.setId(1L);
+        serviceDto.setTitle("t");
+        serviceDto.setDeadline(LocalDateTime.now());
+        serviceDto.setStatus(TaskStatus.IN_PROGRESS.name());
         when(taskService.createTaskFromDefinition(org.mockito.ArgumentMatchers.any(TaskDto.class)))
-                .thenReturn(task);
+                .thenReturn(serviceDto);
 
         TaskDto dto = controller.createTask(new TaskDto());
 

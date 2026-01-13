@@ -7,7 +7,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,12 +43,10 @@ class TenantServiceImplTest {
     }
 
     @Test
-    void getAllAndGetByIdDelegateToRepository() {
+    void getAllTenantsDelegatesToRepository() {
         Tenant tenant = Tenant.builder().id(1L).name("t").build();
         when(tenantRepository.findAll()).thenReturn(List.of(tenant));
-        when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
 
         assertThat(tenantService.getAllTenants()).containsExactly(tenant);
-        assertThat(tenantService.getTenantById(1L)).contains(tenant);
     }
 }

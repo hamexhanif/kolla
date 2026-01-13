@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class RoleServiceImplTest {
@@ -52,11 +53,39 @@ class RoleServiceImplTest {
     }
 
     @Test
+    void createRoleThrowsWhenTenantMissing() {
+        CreateRoleRequestDto requestDto = new CreateRoleRequestDto();
+        requestDto.setTenantId(99L);
+        requestDto.setName("admin");
+
+        when(tenantRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> roleService.createRole(requestDto))
+                .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
     void updateRoleThrowsWhenMissing() {
         when(roleRepository.findById(77L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> roleService.updateRole(77L, new Role()))
                 .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    void updateRoleUpdatesAndSaves() {
+        Role existing = Role.builder().id(7L).name("old").description("old").build();
+        Role details = new Role();
+        details.setName("new");
+        details.setDescription("new");
+
+        when(roleRepository.findById(7L)).thenReturn(Optional.of(existing));
+        when(roleRepository.save(any(Role.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Role updated = roleService.updateRole(7L, details);
+
+        assertThat(updated.getName()).isEqualTo("new");
+        assertThat(updated.getDescription()).isEqualTo("new");
     }
 
     @Test
@@ -72,6 +101,15 @@ class RoleServiceImplTest {
     }
 
     @Test
+    void getRoleByIdAsDtoReturnsNullWhenMissing() {
+        when(roleRepository.findById(404L)).thenReturn(Optional.empty());
+
+        RoleDto result = roleService.getRoleByIdAsDto(404L);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
     void assignRoleToUserUpdatesUserRoles() {
         User user = User.builder().id(10L).roles(new java.util.HashSet<>()).build();
         Role role = Role.builder().id(20L).name("r").build();
@@ -83,5 +121,32 @@ class RoleServiceImplTest {
 
         assertThat(user.getRoles()).contains(role);
         verify(userRepository).save(user);
+    }
+
+    @Test
+    void assignRoleToUserThrowsWhenUserMissing() {
+        when(userRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> roleService.assignRoleToUser(10L, 20L))
+                .isInstanceOf(RuntimeException.class);
+        verify(roleRepository, never()).findById(20L);
+    }
+
+    @Test
+    void assignRoleToUserThrowsWhenRoleMissing() {
+        User user = User.builder().id(10L).roles(new java.util.HashSet<>()).build();
+        when(userRepository.findById(10L)).thenReturn(Optional.of(user));
+        when(roleRepository.findById(20L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> roleService.assignRoleToUser(10L, 20L))
+                .isInstanceOf(RuntimeException.class);
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void deleteRoleDelegatesToRepository() {
+        roleService.deleteRole(12L);
+
+        verify(roleRepository).deleteById(12L);
     }
 }

@@ -13,6 +13,7 @@ import team5.prototype.notification.NotificationService;
 import team5.prototype.role.Role;
 import team5.prototype.taskstep.PriorityService;
 import team5.prototype.taskstep.TaskStep;
+import team5.prototype.taskstep.TaskStepDto;
 import team5.prototype.taskstep.TaskStepRepository;
 import team5.prototype.taskstep.TaskStepStatus;
 import team5.prototype.taskstep.Priority;
@@ -165,18 +166,18 @@ class TaskServiceImplTest {
                 .thenReturn(List.of(assignee));
         when(taskStepRepository.findActiveTaskStepsByUser(assignee.getId())).thenReturn(List.of());
         when(priorityService.calculatePriority(any(TaskStep.class))).thenReturn(Priority.MEDIUM_TERM);
+        when(priorityService.calculatePriority(any(Task.class))).thenReturn(Priority.MEDIUM_TERM);
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Task created = taskService.createTaskFromDefinition(requestDto);
+        TaskDto created = taskService.createTaskFromDefinition(requestDto);
 
-        assertThat(created.getTaskSteps()).hasSize(2);
-        TaskStep first = created.getTaskSteps().get(0);
-        TaskStep second = created.getTaskSteps().get(1);
-        assertThat(first.getStatus()).isEqualTo(TaskStepStatus.ASSIGNED);
-        assertThat(first.getAssignedAt()).isNotNull();
-        assertThat(first.getPriority()).isEqualTo(Priority.MEDIUM_TERM);
-        assertThat(second.getStatus()).isEqualTo(TaskStepStatus.WAITING);
-        assertThat(second.getPriority()).isEqualTo(Priority.MEDIUM_TERM);
+        assertThat(created.getSteps()).hasSize(2);
+        TaskStepDto first = created.getSteps().get(0);
+        TaskStepDto second = created.getSteps().get(1);
+        assertThat(first.getStatus()).isEqualTo(TaskStepStatus.ASSIGNED.name());
+        assertThat(first.getPriority()).isEqualTo(Priority.MEDIUM_TERM.name());
+        assertThat(second.getStatus()).isEqualTo(TaskStepStatus.WAITING.name());
+        assertThat(second.getPriority()).isEqualTo(Priority.MEDIUM_TERM.name());
     }
 
     @Test
@@ -323,6 +324,7 @@ class TaskServiceImplTest {
 
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
         when(priorityService.calculatePriority(any(TaskStep.class))).thenReturn(Priority.IMMEDIATE);
+        when(priorityService.calculatePriority(any(Task.class))).thenReturn(Priority.IMMEDIATE);
 
         TaskDetailsDto details = taskService.getTaskDetails(task.getId());
 
