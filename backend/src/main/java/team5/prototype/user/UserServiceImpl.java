@@ -7,6 +7,7 @@ import team5.prototype.dto.CreateUserRequestDto;
 import team5.prototype.role.Role;
 import team5.prototype.role.RoleRepository;
 import team5.prototype.tenant.Tenant;
+import team5.prototype.tenant.TenantContext;
 import team5.prototype.tenant.TenantRepository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -40,9 +42,13 @@ public class UserServiceImpl implements UserService {
     // ===================================================================
     @Override
     public User createUser(CreateUserRequestDto requestDto) {
+        Long tenantId = currentTenantId();
+        if (requestDto.getTenantId() != null && !tenantId.equals(requestDto.getTenantId())) {
+            throw new EntityNotFoundException("Tenant mismatch");
+        }
         // 1. Lade den Tenant aus der Datenbank
-        Tenant tenant = tenantRepository.findById(requestDto.getTenantId())
-                .orElseThrow(() -> new RuntimeException("Tenant mit ID " + requestDto.getTenantId() + " nicht gefunden"));
+        Tenant tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new EntityNotFoundException("Tenant mit ID " + tenantId + " nicht gefunden"));
 
         // 2. Erstelle eine neue User-Entity aus dem DTO
         User newUser = User.builder()
@@ -58,7 +64,7 @@ public class UserServiceImpl implements UserService {
 
         // IMPORTANT: Fetch actual Role entity and add them to the user
         if (requestDto.getRoleId() != null) {
-            Optional<Role> role = roleRepository.findById(requestDto.getRoleId());
+            Optional<Role> role = roleRepository.findByIdAndTenantId(requestDto.getRoleId(), tenantId);
             role.ifPresent(value -> newUser.getRoles().add(value));
         }
 
@@ -70,18 +76,19 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<User> getAllUsers() {
-        return userRepository.findAllActive();
+        return userRepository.findAllActiveByTenantId(currentTenantId());
     }
 
     @Override
     public Optional<User> getUserById(Long userId) {
-        return userRepository.findByIdAndActive(userId);
+        return userRepository.findByIdAndTenantIdAndActive(userId, currentTenantId());
     }
 
     @Override
     @Transactional
     public User updateUser(Long userId, UpdateUserRequestDto requestDto) {
-        return userRepository.findById(userId)
+        Long tenantId = currentTenantId();
+        return userRepository.findByIdAndTenantId(userId, tenantId)
                 .map(existingUser -> {
                     // Update der Basis-Daten aus dem DTO
                     existingUser.setUsername(requestDto.getUsername());
@@ -89,7 +96,9 @@ public class UserServiceImpl implements UserService {
 
                     // KORREKTE LOGIK ZUM AKTUALISIEREN DER ROLLEN
                     if (requestDto.getRoleIds() != null) {
-                        Set<Role> newRoles = new HashSet<>(roleRepository.findAllById(requestDto.getRoleIds()));
+                        Set<Role> newRoles = roleRepository.findAllById(requestDto.getRoleIds()).stream()
+                                .filter(role -> role.getTenant() != null && tenantId.equals(role.getTenant().getId()))
+                                .collect(Collectors.toSet());
                         existingUser.getRoles().clear(); // Alte Rollen entfernen
                         existingUser.getRoles().addAll(newRoles); // Neue Rollen hinzufügen
                     }
@@ -102,11 +111,19 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(Long userId) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdAndTenantId(userId, currentTenantId())
                 .orElseThrow(() -> new EntityNotFoundException("Benutzer mit ID " + userId + " nicht gefunden!"));
 
         // Instead of deleting, mark as inactive (soft delete)
         user.setActive(false);
         userRepository.save(user);
+    }
+
+    private Long currentTenantId() {
+        Long tenantId = TenantContext.getTenantId();
+        if (tenantId == null) {
+            throw new EntityNotFoundException("Kein Tenant-Kontext vorhanden");
+        }
+        return tenantId;
     }
 }

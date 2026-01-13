@@ -1,146 +1,145 @@
-//package team5.prototype.taskstep;
-//
-//import org.junit.jupiter.api.BeforeEach;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.api.extension.ExtendWith;
-//import org.mockito.ArgumentCaptor;
-//import org.mockito.InjectMocks;
-//import org.mockito.Mock;
-//import org.mockito.junit.jupiter.MockitoExtension;
-//import team5.prototype.dto.ActorDashboardItemDto;
-//import team5.prototype.notification.NotificationService;
-//import team5.prototype.task.Task;
-//import team5.prototype.task.TaskStatus;
-//import team5.prototype.task.TaskService;
-//import team5.prototype.user.User;
-//import team5.prototype.user.UserRepository;
-//import team5.prototype.workflow.step.WorkflowStep;
-//
-//import java.time.LocalDateTime;
-//import java.util.List;
-//import java.util.Optional;
-//
-//import static org.assertj.core.api.Assertions.assertThat;
-//import static org.mockito.ArgumentMatchers.any;
-//import static org.mockito.ArgumentMatchers.eq;
-//import static org.mockito.Mockito.*;
-//
-//@ExtendWith(MockitoExtension.class)
-//class TaskStepServiceImplTest {
-//
-//    @Mock
-//    private TaskStepRepository taskStepRepository;
-//    @Mock
-//    private UserRepository userRepository;
-//    @Mock
-//    private TaskService taskService;
-//    @Mock
-//    private NotificationService notificationService;
-//
-//    @InjectMocks
-//    private TaskStepServiceImpl taskStepService;
-//
-//    private TaskStep taskStep;
-//    private User user;
-//
-//    @BeforeEach
-//    void setUp() {
-//        Task task = Task.builder()
-//                .id(42L)
-//                .title("Test Task")
-//                .deadline(LocalDateTime.now().plusDays(1))
-//                .status(TaskStatus.NOT_STARTED)
-//                .build();
-//        WorkflowStep workflowStep = WorkflowStep.builder()
-//                .id(7L)
-//                .name("Review")
-//                .sequenceOrder(1)
-//                .build();
-//        taskStep = TaskStep.builder()
-//                .id(1L)
-//                .task(task)
-//                .workflowStep(workflowStep)
-//                .status(TaskStepStatus.WAITING)
-//                .priority(Priority.MEDIUM_TERM)
-//                .build();
-//        user = User.builder().id(10L).build();
-//    }
-//
-//    @Test
-//    void assignsTaskStepToUserAndSetsAssignedAt() {
-//        when(taskStepRepository.findById(1L)).thenReturn(Optional.of(taskStep));
-//        when(userRepository.findById(10L)).thenReturn(Optional.of(user));
-//        when(taskStepRepository.save(any(TaskStep.class))).thenAnswer(invocation -> invocation.getArgument(0));
-//
-//        TaskStep result = taskStepService.assignTaskStepToUser(1L, 10L);
-//
-//        assertThat(result.getAssignedUser()).isEqualTo(user);
-//        assertThat(result.getStatus()).isEqualTo(TaskStepStatus.ASSIGNED);
-//        assertThat(result.getAssignedAt()).isNotNull();
-//    }
-//
-//    @Test
-//    void setsManualPriorityAndMapsEnum() {
-//        when(taskStepRepository.findById(1L)).thenReturn(Optional.of(taskStep));
-//        when(taskStepRepository.save(any(TaskStep.class))).thenAnswer(invocation -> invocation.getArgument(0));
-//
-//        TaskStep result = taskStepService.setManualPriority(1L, 2);
-//
-//        assertThat(result.getManualPriority()).isEqualTo(2);
-//        assertThat(result.getPriority()).isEqualTo(Priority.MEDIUM_TERM);
-//    }
-//
-//    @Test
-//    void returnsActiveTaskStepsForUser() {
-//        List<TaskStep> steps = List.of(taskStep);
-//        when(taskStepRepository.findByAssignedUserIdAndStatusNot(10L, TaskStepStatus.COMPLETED)).thenReturn(steps);
-//
-//        List<TaskStep> result = taskStepService.getActiveTaskStepsByUser(10L);
-//
-//        assertThat(result).containsExactly(taskStep);
-//    }
-//
-//    @Test
-//    void buildsActorDashboardItemsWithFilters() {
-//        Task task = Task.builder()
-//                .id(99L)
-//                .title("Task One")
-//                .deadline(LocalDateTime.now().plusDays(1))
-//                .status(TaskStatus.NOT_STARTED)
-//                .build();
-//        WorkflowStep workflowStep = WorkflowStep.builder()
-//                .id(88L)
-//                .name("Review Document")
-//                .sequenceOrder(2)
-//                .build();
-//        TaskStep step = TaskStep.builder()
-//                .id(1L)
-//                .task(task)
-//                .workflowStep(workflowStep)
-//                .status(TaskStepStatus.ASSIGNED)
-//                .priority(Priority.MEDIUM_TERM)
-//                .assignedAt(LocalDateTime.now())
-//                .build();
-//
-//        when(taskStepRepository.findByAssignedUserIdAndStatusNot(10L, TaskStepStatus.COMPLETED))
-//                .thenReturn(List.of(step));
-//
-//        List<ActorDashboardItemDto> result = taskStepService.getActorDashboardItems(
-//                10L,
-//                TaskStepStatus.ASSIGNED,
-//                Priority.MEDIUM_TERM,
-//                "review"
-//        );
-//
-//        assertThat(result).hasSize(1);
-//        assertThat(result.get(0).taskId()).isEqualTo(99L);
-//        assertThat(result.get(0).stepName()).isEqualTo("Review Document");
-//    }
-//
-//    @Test
-//    void delegatesCompleteTaskStepToTaskService() {
-//        taskStepService.completeTaskStep(5L, 1L, 10L);
-//
-//        verify(taskService).completeStep(5L, 1L, 10L);
-//    }
-//}
+package team5.prototype.taskstep;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import team5.prototype.dto.ActorDashboardItemDto;
+import team5.prototype.notification.NotificationService;
+import team5.prototype.task.Task;
+import team5.prototype.task.TaskStatus;
+import team5.prototype.task.TaskService;
+import team5.prototype.tenant.TenantContext;
+import team5.prototype.workflow.step.WorkflowStep;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class TaskStepServiceImplTest {
+
+    @Mock
+    private TaskStepRepository taskStepRepository;
+    @Mock
+    private TaskService taskService;
+    @Mock
+    private NotificationService notificationService;
+
+    @InjectMocks
+    private TaskStepServiceImpl taskStepService;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        TenantContext.setTenantId(5L);
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        TenantContext.clear();
+    }
+
+    @Test
+    void getActorDashboardItemsFiltersAndMaps() {
+        Long tenantId = 5L;
+        Task task = Task.builder()
+                .id(11L)
+                .title("Review Document")
+                .deadline(LocalDateTime.now().plusDays(1))
+                .status(TaskStatus.IN_PROGRESS)
+                .build();
+        WorkflowStep workflowStep = WorkflowStep.builder()
+                .id(21L)
+                .name("Review")
+                .sequenceOrder(1)
+                .build();
+        TaskStep matching = TaskStep.builder()
+                .id(31L)
+                .task(task)
+                .workflowStep(workflowStep)
+                .status(TaskStepStatus.ASSIGNED)
+                .priority(Priority.MEDIUM_TERM)
+                .assignedAt(LocalDateTime.now())
+                .build();
+        TaskStep ignored = TaskStep.builder()
+                .id(32L)
+                .task(task)
+                .workflowStep(workflowStep)
+                .status(TaskStepStatus.COMPLETED)
+                .priority(Priority.LONG_TERM)
+                .build();
+
+        when(taskStepRepository.findByAssignedUserIdAndTask_Tenant_IdAndStatusNot(5L, tenantId, TaskStepStatus.COMPLETED))
+                .thenReturn(List.of(matching, ignored));
+
+        List<ActorDashboardItemDto> result = taskStepService.getActorDashboardItems(
+                5L,
+                TaskStepStatus.ASSIGNED,
+                Priority.MEDIUM_TERM,
+                "review"
+        );
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).taskId()).isEqualTo(11L);
+        assertThat(result.get(0).stepName()).isEqualTo("Review");
+    }
+
+    @Test
+    void setManualPriorityUpdatesAndNotifies() {
+        Long tenantId = 5L;
+        Task task = Task.builder().id(91L).build();
+        WorkflowStep workflowStep = WorkflowStep.builder().name("Finalize").build();
+        TaskStep step = TaskStep.builder()
+                .id(41L)
+                .task(task)
+                .workflowStep(workflowStep)
+                .status(TaskStepStatus.ASSIGNED)
+                .priority(Priority.MEDIUM_TERM)
+                .build();
+
+        when(taskStepRepository.findByIdAndTask_Tenant_Id(41L, tenantId)).thenReturn(Optional.of(step));
+        when(taskStepRepository.save(any(TaskStep.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TaskStepDto dto = taskStepService.setManualPriorityAndConvertToDto(41L, 3);
+
+        assertThat(step.getManualPriority()).isEqualTo(3);
+        assertThat(step.getPriority()).isEqualTo(Priority.LONG_TERM);
+        assertThat(dto.getId()).isEqualTo(41L);
+        assertThat(dto.getPriority()).isEqualTo(Priority.LONG_TERM.name());
+
+        ArgumentCaptor<Object> payloadCaptor = ArgumentCaptor.forClass(Object.class);
+        verify(notificationService).sendTaskUpdateNotification(
+                org.mockito.ArgumentMatchers.eq(91L),
+                payloadCaptor.capture()
+        );
+        @SuppressWarnings("unchecked")
+        Map<String, Object> payload = (Map<String, Object>) payloadCaptor.getValue();
+        assertThat(payload).containsEntry("newPriority", Priority.LONG_TERM.name());
+    }
+
+    @Test
+    void completeTaskStepDelegatesToTaskService() {
+        taskStepService.completeTaskStep(10L, 20L, 30L);
+
+        verify(taskService).completeStep(10L, 20L, 30L);
+    }
+
+    @Test
+    void getAllTaskStepsByUserIdReturnsRepositoryData() {
+        Long tenantId = 5L;
+        TaskStep step = TaskStep.builder().id(77L).build();
+        when(taskStepRepository.findAllByAssignedUserIdAndTask_Tenant_Id(7L, tenantId)).thenReturn(List.of(step));
+
+        List<TaskStep> result = taskStepService.getAllTaskStepsByUserId(7L);
+
+        assertThat(result).containsExactly(step);
+    }
+}

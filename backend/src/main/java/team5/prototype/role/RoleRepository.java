@@ -3,6 +3,7 @@ package team5.prototype.role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -15,4 +16,7 @@ public interface RoleRepository extends JpaRepository<Role, Long> {
      * @return Ein Optional, das die Rolle enthält, falls gefunden.
      */
     Optional<Role> findByNameAndTenantId(String name, Long tenantId);
+
+    List<Role> findAllByTenantId(Long tenantId);
+    Optional<Role> findByIdAndTenantId(Long id, Long tenantId);
 }

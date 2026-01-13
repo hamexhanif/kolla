@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import team5.prototype.dto.ActorDashboardItemDto;
 import team5.prototype.notification.NotificationService;
 import team5.prototype.task.TaskService;
+import team5.prototype.tenant.TenantContext;
 
 import java.util.List;
 import java.util.Locale;
@@ -35,8 +36,9 @@ public class TaskStepServiceImpl implements TaskStepService {
     @Override
     @Transactional(readOnly = true)
     public List<ActorDashboardItemDto> getActorDashboardItems(Long userId, TaskStepStatus status, Priority priority, String query) {
+        Long tenantId = currentTenantId();
         Stream<TaskStep> steps = taskStepRepository
-                .findByAssignedUserIdAndStatusNot(userId, TaskStepStatus.COMPLETED)
+                .findByAssignedUserIdAndTask_Tenant_IdAndStatusNot(userId, tenantId, TaskStepStatus.COMPLETED)
                 .stream();
         if (status != null) {
             steps = steps.filter(step -> step.getStatus() == status);
@@ -54,7 +56,7 @@ public class TaskStepServiceImpl implements TaskStepService {
     @Override
     @Transactional(readOnly = true)
     public List<ActorDashboardItemDto> getActorDashboardItems(Long userId) {
-        return taskStepRepository.findByAssignedUserIdAndStatusNot(userId, TaskStepStatus.COMPLETED)
+        return taskStepRepository.findByAssignedUserIdAndTask_Tenant_IdAndStatusNot(userId, currentTenantId(), TaskStepStatus.COMPLETED)
                 .stream()
                 .map(this::toActorDashboardItemDto)
                 .collect(Collectors.toList());
@@ -86,13 +88,13 @@ public class TaskStepServiceImpl implements TaskStepService {
 
     @Override
     public List<TaskStep> getAllTaskStepsByUserId(Long userId) {
-        return taskStepRepository.findAllByAssignedUserId(userId);
+        return taskStepRepository.findAllByAssignedUserIdAndTask_Tenant_Id(userId, currentTenantId());
     }
 
     // --- Private Hilfsmethoden ---
 
     private TaskStep findTaskStep(Long id) {
-        return taskStepRepository.findById(id)
+        return taskStepRepository.findByIdAndTask_Tenant_Id(id, currentTenantId())
                 .orElseThrow(() -> new EntityNotFoundException("TaskStep %d nicht gefunden".formatted(id)));
     }
 
@@ -127,6 +129,14 @@ public class TaskStepServiceImpl implements TaskStepService {
             return false;
         }
         return value.toLowerCase(Locale.ROOT).contains(needleLower);
+    }
+
+    private Long currentTenantId() {
+        Long tenantId = TenantContext.getTenantId();
+        if (tenantId == null) {
+            throw new EntityNotFoundException("Kein Tenant-Kontext vorhanden");
+        }
+        return tenantId;
     }
 
 }

@@ -13,12 +13,29 @@ public class TenantServiceImpl implements TenantService {
         return tenantRepository.save(newTenant);
     }
     @Override
-    public List<Tenant> getAllTenants() { return tenantRepository.findAll(); }
+    public List<Tenant> getAllTenants() {
+        Long tenantId = currentTenantId();
+        return tenantRepository.findById(tenantId).map(List::of).orElseGet(List::of);
+    }
     @Override
-    public Optional<Tenant> getTenantById(Long id) { return tenantRepository.findById(id); }
+    public Optional<Tenant> getTenantById(Long id) {
+        if (!currentTenantId().equals(id)) {
+            return Optional.empty();
+        }
+        return tenantRepository.findById(id);
+    }
     @Override
     public void deleteTenant(Long id) {
+        if (!currentTenantId().equals(id)) { throw new RuntimeException("..."); }
         if (!tenantRepository.existsById(id)) { throw new RuntimeException("..."); }
         tenantRepository.deleteById(id);
+    }
+
+    private Long currentTenantId() {
+        Long tenantId = TenantContext.getTenantId();
+        if (tenantId == null) {
+            throw new RuntimeException("Kein Tenant-Kontext vorhanden");
+        }
+        return tenantId;
     }
 }
