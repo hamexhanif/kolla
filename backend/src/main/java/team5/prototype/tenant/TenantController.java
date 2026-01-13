@@ -17,7 +17,7 @@ public class TenantController {
     }
 
     @PostMapping
-    public TenantDto createTenant(@RequestBody TenantDto requestDto) { // SIGNATUR GEÄNDERT
+    public TenantDto createTenant(@RequestBody TenantDto requestDto) {
         Tenant createdTenant = tenantService.createTenant(requestDto);
         return convertToDto(createdTenant);
     }
@@ -41,7 +41,7 @@ public class TenantController {
                 .name(tenant.getName())
                 .subdomain(tenant.getSubdomain())
                 .active(tenant.getActive())
-                .createdAt(tenant.getCreatedAt()) // Wir können das createdAt-Feld auch mitsenden
+                .createdAt(tenant.getCreatedAt())
                 .build();
     }
 }

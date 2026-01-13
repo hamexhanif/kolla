@@ -18,20 +18,16 @@ public class TaskController {
 
     @PostMapping
     public TaskDto createTask(@RequestBody TaskDto requestDto) {
-        Task createdTask = taskService.createTaskFromDefinition(requestDto);
-        // Die Konvertierung passiert noch hier, aber das ist OK weil createTaskFromDefinition @Transactional ist
-        return convertToDto(createdTask);
+        return taskService.createTaskFromDefinition(requestDto);
     }
 
     @GetMapping
     public List<TaskDto> getAllTasks() {
-        // NEUE Methode verwenden - Konvertierung passiert im Service
         return taskService.getAllTasksAsDto();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<TaskDto> getTaskById(@PathVariable Long id) {
-        // NEUE Methode verwenden - Konvertierung passiert im Service
         return taskService.getTaskByIdAsDto(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -47,17 +43,5 @@ public class TaskController {
     public ResponseEntity<TaskDetailsDto> getTaskDetails(@PathVariable Long id) {
         TaskDetailsDto details = taskService.getTaskDetails(id);
         return ResponseEntity.ok(details);
-    }
-
-    // Diese Methode nur noch fuer createTask verwendet
-    private TaskDto convertToDto(Task task) {
-        TaskDto dto = new TaskDto();
-        dto.setId(task.getId());
-        dto.setTitle(task.getTitle());
-        dto.setDeadline(task.getDeadline());
-        if (task.getStatus() != null) {
-            dto.setStatus(task.getStatus().name());
-        }
-        return dto;
     }
 }

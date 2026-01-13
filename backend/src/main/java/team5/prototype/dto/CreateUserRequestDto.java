@@ -8,7 +8,7 @@ import lombok.Setter;
 public class CreateUserRequestDto {
     private String username;
     private String email;
-    private String password; // Wir nehmen das Passwort als Klartext an
+    private String password;
     private String firstName;
     private String lastName;
     private Long tenantId;

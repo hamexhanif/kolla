@@ -17,16 +17,12 @@ import java.util.stream.Collectors;
 public class UserController {
 
     private final UserService userService;
-    private final TaskStepService taskStepService; // Abhängigkeit ist korrekt
+    private final TaskStepService taskStepService;
 
-    // Konstruktor ist jetzt sauber
     public UserController(UserService userService, TaskStepService taskStepService) {
-        System.out.println(">>> USER CONTROLLER WURDE ERSTELLT!");
         this.userService = userService;
         this.taskStepService = taskStepService;
     }
-
-    // --- Endpunkte für die User-Verwaltung (CRUD) ---
 
     @GetMapping
     public List<UserDto> getAllUsers() {
@@ -60,16 +56,15 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    // ===================================================================
-    // DER EINE, KORREKTE ENDPUNKT FÜR DAS AKTEUR-DASHBOARD ("My Tasks")
-    // ===================================================================
+    // Der Endpunkt für das Akteur-Dashboard ("My Tasks")
     @GetMapping("/dashboard-tasks/{userId}")
     public List<ActorDashboardItemDto> getMyTasks(@PathVariable Long userId) {
         return taskStepService.getActorDashboardItems(userId);
     }
 
 
-    // --- Private Konvertierungs-Hilfsmethode ---
+    // TODO: Move convertToDto to UserServiceImpl
+    // Private Konvertierungs-Hilfsmethode
     private UserDto convertToDto(User user) {
         UserDto dto = new UserDto();
         dto.setId(user.getId());

@@ -53,7 +53,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
-    public Task createTaskFromDefinition(TaskDto request) {
+    public TaskDto createTaskFromDefinition(TaskDto request) {
         WorkflowDefinition definition = definitionRepository.findById(request.getWorkflowDefinitionId())
                 .orElseThrow(() -> new EntityNotFoundException(
                         "WorkflowDefinition %d nicht gefunden".formatted(request.getWorkflowDefinitionId())));
@@ -99,7 +99,8 @@ public class TaskServiceImpl implements TaskService {
         task.setTaskSteps(concreteSteps);
 
         refreshPriorityForNotCompletedTaskSteps(task);
-        return taskRepository.save(task);
+        taskRepository.save(task);
+        return convertToDto(task);
     }
 
     @Override
@@ -188,7 +189,7 @@ public class TaskServiceImpl implements TaskService {
         int completedSteps = (int) task.getTaskSteps().stream()
                 .filter(step -> step.getStatus() == TaskStepStatus.COMPLETED)
                 .count();
-        Priority priority = resolveTaskPriority(task);
+        Priority priority = priorityService.calculatePriority(task);
         List<TaskDetailsStepDto> stepDtos = task.getTaskSteps().stream()
                 .sorted(Comparator.comparingInt(step -> step.getWorkflowStep().getSequenceOrder()))
                 .map(this::toTaskDetailsStep)
@@ -235,18 +236,6 @@ public class TaskServiceImpl implements TaskService {
                 .map(this::convertToDto);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<Task> getAllTasks() {
-        return taskRepository.findAll();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<Task> getTaskById(Long taskId) {
-        return taskRepository.findById(taskId);
-    }
-
     private TaskDto convertToDto(Task task) {
         TaskDto dto = new TaskDto();
         dto.setId(task.getId());
@@ -262,6 +251,7 @@ public class TaskServiceImpl implements TaskService {
                     .collect(Collectors.toList());
             dto.setSteps(stepDtos);
         }
+        dto.setPriority(priorityService.calculatePriority(task));
         return dto;
     }
 
@@ -394,22 +384,19 @@ public class TaskServiceImpl implements TaskService {
         return LocalDateTime.now();
     }
 
-    // ===================================================================
-    // KORREKTUR: Diese Methode wurde angepasst, um den Bug zu beheben.
-    // ===================================================================
     private Priority resolveTaskPriority(Task task) {
-        // 1. Finde den ersten, noch nicht abgeschlossenen Arbeitsschritt
+        // Finde den ersten, noch nicht abgeschlossenen Arbeitsschritt
         Optional<TaskStep> nextStepOpt = task.getTaskSteps().stream()
                 .filter(step -> step.getStatus() != TaskStepStatus.COMPLETED)
                 .min(Comparator.comparingInt(step -> step.getWorkflowStep().getSequenceOrder()));
 
-        // 2. WENN ein nächster Schritt existiert...
+        // Wenn ein nächster Schritt existiert...
         if (nextStepOpt.isPresent()) {
-            // ...rufe den PriorityService auf, um die Priorität in Echtzeit neu zu berechnen.
+            // rufe den PriorityService auf, um die Priorität in Echtzeit neu zu berechnen.
             return priorityService.calculatePriority(nextStepOpt.get());
         }
 
-        // 3. Wenn alle Schritte erledigt sind, hat die Aufgabe keine Priorität mehr.
+        // Wenn alle Schritte erledigt sind, hat die Aufgabe keine Priorität mehr.
         return null;
     }
 
@@ -426,7 +413,7 @@ public class TaskServiceImpl implements TaskService {
         String assigneeName = formatAssigneeName(step.getAssignedUser());
         LocalDateTime dueDate = resolveStepDueDate(step);
 
-        // KORREKTUR: Wir berechnen die Priorität für jeden einzelnen Schritt neu,
+        // Wir berechnen die Priorität für jeden einzelnen Schritt neu,
         // damit die Anzeige in der Schrittliste auch immer aktuell ist.
         Priority currentStepPriority = priorityService.calculatePriority(step);
 

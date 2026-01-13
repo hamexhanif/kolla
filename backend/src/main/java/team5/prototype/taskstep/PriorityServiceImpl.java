@@ -16,21 +16,16 @@ public class PriorityServiceImpl implements PriorityService {
     public Priority calculatePriority(TaskStep taskStep) {
         LocalDateTime now = LocalDateTime.now();
 
-        // ===================================================================
-        // NEUE LOGIK (Vorschlag von Hanif):
-        // 1. Berechne zuerst die individuelle Deadline für genau diesen Arbeitsschritt.
-        // ===================================================================
+        // Berechne zuerst die individuelle Deadline für genau diesen Arbeitsschritt.
         LocalDateTime stepDueDate = calculateStepDueDate(taskStep);
 
-        // Wenn der Schritt keine Deadline hat (z.B. weil die Task keine hat), können wir keine Priorität berechnen.
+        // Wenn der Schritt keine Deadline hat, können wir keine Priorität berechnen.
         // Als sicherer Fallback wird die alte Logik verwendet.
         if (stepDueDate == null) {
             return calculatePriorityByTaskDeadline(taskStep.getTask());
         }
 
-        // ===================================================================
-        // 2. Wende die Prioritätsregel (<8h, 8-32h, >32h) auf die Deadline des Schritts an.
-        // ===================================================================
+        // Wende die Prioritätsregel (<8h, 8-32h, >32h) auf die Deadline des Schritts an.
         long hoursUntilStepDueDate = Duration.between(now, stepDueDate).toHours();
 
         if (hoursUntilStepDueDate <= 8) {
@@ -40,6 +35,11 @@ public class PriorityServiceImpl implements PriorityService {
             return Priority.MEDIUM_TERM;
         }
         return Priority.LONG_TERM;
+    }
+
+    @Override
+    public Priority calculatePriority(Task task) {
+        return calculatePriorityByTaskDeadline(task);
     }
 
     /**

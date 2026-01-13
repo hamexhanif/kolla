@@ -64,23 +64,23 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
                 .authorizeHttpRequests(authorize -> authorize
-                        // 1. Öffentliche Endpunkte
+                        // Öffentliche Endpunkte
                         .requestMatchers("/api/auth/**", "/h2-console/**", "/ws/**").permitAll()
 
-                        // 2. Spezifische Regeln für Akteure
+                        // Spezifische Regeln für Akteure
                         .requestMatchers(HttpMethod.GET, "/api/users/{userId}/tasks").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/users/{userId}/dashboard").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/task-steps/*/complete").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/users/dashboard-tasks/{userId}").authenticated()
 
-                        // 3. Spezifische Regeln für Manager
+                        // Spezifische Regeln für Manager
                         .requestMatchers("/api/manager/**").hasRole("WORKFLOW_MANAGER")
                         .requestMatchers("/api/users/**").hasRole("WORKFLOW_MANAGER")
                         .requestMatchers("/api/roles/**").hasRole("WORKFLOW_MANAGER")
                         .requestMatchers("/api/tasks/**").hasRole("WORKFLOW_MANAGER")
                         .requestMatchers("/api/task-steps/*/set-priority").hasRole("WORKFLOW_MANAGER")
 
-                        // 4. Alle anderen Requests benötigen mindestens Authentifizierung
+                        // Alle anderen Requests benötigen mindestens Authentifizierung
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

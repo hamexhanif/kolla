@@ -22,7 +22,6 @@ public class WorkflowDefinitionServiceImpl implements WorkflowDefinitionService 
 
     @Override
     public WorkflowDefinition createWorkflowDefinition(WorkflowDefinition definition) {
-        // WICHTIG: Setze die Rück-Referenz für jeden Schritt, bevor du speicherst.
         if (definition.getSteps() != null) {
             for (WorkflowStep step : definition.getSteps()) {
                 step.setWorkflowDefinition(definition);
@@ -75,7 +74,7 @@ public class WorkflowDefinitionServiceImpl implements WorkflowDefinitionService 
 
     private RoleDto convertRoleToDto(Role role) {
         if (role == null) return null;
-        return RoleDto.builder() // Jetzt funktioniert der Builder
+        return RoleDto.builder()
                 .id(role.getId())
                 .name(role.getName())
                 .description(role.getDescription())

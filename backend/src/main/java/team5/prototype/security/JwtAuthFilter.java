@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
@@ -11,13 +12,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+@Slf4j
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
@@ -35,31 +36,31 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        System.out.println("\n>>> FILTER START: " + request.getRequestURI());
-        System.out.println(">>> SecurityContext BEFORE: " + SecurityContextHolder.getContext().getAuthentication());
+        log.debug("\n>>> FILTER START: {}", request.getRequestURI());
+        log.debug(">>> SecurityContext BEFORE: {}", SecurityContextHolder.getContext().getAuthentication());
 
         final String authHeader = request.getHeader("Authorization");
-        System.out.println(">>> Authorization Header: '" + authHeader + "'");
+        log.debug(">>> Authorization Header: '{}'", authHeader);
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            System.out.println(">>> No Bearer token, continuing...");
+            log.debug(">>> No Bearer token, continuing...");
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
             final String jwt = authHeader.substring(7);
-            System.out.println(">>> Extracted JWT: '" + jwt + "'");  // NEU!
-            System.out.println(">>> JWT Length: " + jwt.length());
+            log.debug(">>> Extracted JWT: '{}'", jwt);  // NEU!
+            log.debug(">>> JWT Length: {}", jwt.length());
             final String email = jwtService.extractEmail(jwt);
 
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(email);
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
-                    System.out.println("=== JWT AUTH DEBUG ===");
-                    System.out.println("Request URI: " + request.getRequestURI());
-                    System.out.println("User: " + email);
-                    System.out.println("Authorities: " + userDetails.getAuthorities());
+                    log.debug("=== JWT AUTH DEBUG ===");
+                    log.debug("Request URI: {}", request.getRequestURI());
+                    log.debug("User: {}", email);
+                    log.debug("Authorities: {}", userDetails.getAuthorities());
 
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities()
@@ -67,9 +68,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
 
-                    System.out.println(">>> SecurityContext SET TO: " + SecurityContextHolder.getContext().getAuthentication());
-                    System.out.println(">>> Is Authenticated: " + authToken.isAuthenticated());
-                    System.out.println("=====================");
+                    log.debug(">>> SecurityContext SET TO: {}", SecurityContextHolder.getContext().getAuthentication());
+                    log.debug(">>> Is Authenticated: {}", authToken.isAuthenticated());
+                    log.debug("=====================");
 
                     logger.info("Benutzer '{}' erfolgreich authentifiziert.", email);
                 }
@@ -79,11 +80,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             e.printStackTrace();
         }
 
-        System.out.println(">>> SecurityContext BEFORE filterChain: " + SecurityContextHolder.getContext().getAuthentication());
+        log.debug(">>> SecurityContext BEFORE filterChain: {}", SecurityContextHolder.getContext().getAuthentication());
 
         filterChain.doFilter(request, response);
 
-        System.out.println(">>> SecurityContext AFTER filterChain: " + SecurityContextHolder.getContext().getAuthentication());
-        System.out.println(">>> FILTER END\n");
+        log.debug(">>> SecurityContext AFTER filterChain: {}", SecurityContextHolder.getContext().getAuthentication());
+        log.debug(">>> FILTER END\n");
     }
 }
