@@ -88,7 +88,11 @@ Alle Endpunkte, die nicht als `Öffentlich` markiert sind, erfordern ein gültig
 ### Initial-Daten (Data Seeder)
 
 Beim ersten Start befüllt der `DataSeeder` die Datenbank automatisch mit Testdaten. Dies inkludiert:
--   Einen `WORKFLOW_MANAGER`: `admin` / `adminpassword`
--   Einen `DEVELOPER`: `developer` / `devpassword`
--   Einen `TESTER`: `tester` / `testpassword`
+-   Zwei `Mandanten`: `Default Tenant` und `Tenant 2`
+-   Einen `WORKFLOW_MANAGER`: `admin@kolla.com` / `adminpassword` für `Default Tenant`
+-   Einen `WORKFLOW_MANAGER`: `admin2@kolla.com` / `adminpassword` für `Tenant 2`
+-   Einen `DEVELOPER`: `dev@kolla.com` / `devpassword` (Role von `Default Tenant`)
+-   Einen `TESTER`: `tester@kolla.com` / `testpassword` (Role von `Default Tenant`)
+-   Einen `KOCH`: `koch@kolla.com` / `password` (Role von `Tenant 2`)
+-   Einen `LEHRER`: `lehrer@kolla.com` / `password` (Role von `Tenant 2`)
 -   Eine Beispiel-Workflow-Vorlage und eine daraus erstellte Aufgabe.
