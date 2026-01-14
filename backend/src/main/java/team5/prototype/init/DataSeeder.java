@@ -92,8 +92,8 @@ public class DataSeeder implements CommandLineRunner {
         userRepository.saveAll(List.of(developerUser, testerUser));
 
         // Benutzer von zweite Mandanten
-        User kochUser = User.builder().username("koch").email("koch@kolla.com").passwordHash(passwordEncoder.encode("password")).firstName("Dev").lastName("Eloper").tenant(tenant2).roles(Set.of(kochRole)).active(true).build();
-        User lehrerUser = User.builder().username("lehrer").email("lehrer@kolla.com").passwordHash(passwordEncoder.encode("password")).firstName("Test").lastName("Er").tenant(tenant2).roles(Set.of(lehrerRole)).active(true).build();
+        User kochUser = User.builder().username("koch").email("koch@kolla.com").passwordHash(passwordEncoder.encode("password")).firstName("Koch").lastName("Meister").tenant(tenant2).roles(Set.of(kochRole)).active(true).build();
+        User lehrerUser = User.builder().username("lehrer").email("lehrer@kolla.com").passwordHash(passwordEncoder.encode("password")).firstName("Lehrer").lastName("Mehrer").tenant(tenant2).roles(Set.of(lehrerRole)).active(true).build();
         userRepository.saveAll(List.of(kochUser, lehrerUser));
 
         // == Eine Workflow-Vorlage (WorkflowDefinition) erstellen ==
