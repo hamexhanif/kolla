@@ -9,6 +9,7 @@ import team5.prototype.role.RoleRepository;
 import team5.prototype.task.TaskDto;
 import team5.prototype.task.TaskService;
 import team5.prototype.tenant.Tenant;
+import team5.prototype.tenant.TenantContext;
 import team5.prototype.tenant.TenantRepository;
 import team5.prototype.user.User;
 import team5.prototype.user.UserRepository;
@@ -92,10 +93,13 @@ public class DataSeeder implements CommandLineRunner {
         taskRequestDto.setCreatorUserId(adminUser.getId());
 
         try {
+            TenantContext.setTenantId(defaultTenant.getId());
             taskService.createTaskFromDefinition(taskRequestDto);
             log.info(">>>> DATENSEEDER: Test-Task erfolgreich erstellt! <<<<");
         } catch (Exception e) {
-            log.error(">>>> FEHLER BEIM ERSTELLEN DES TEST-TASKS: {}", e.getMessage(), e);
+            logger.error(">>>> FEHLER BEIM ERSTELLEN DES TEST-TASKS: {}", e.getMessage(), e);
+        } finally {
+            TenantContext.clear();
         }
 
         log.info("-----------------------------------------");

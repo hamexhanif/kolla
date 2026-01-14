@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team5.prototype.dto.CreateRoleRequestDto;
 import team5.prototype.tenant.Tenant;
+import team5.prototype.tenant.TenantContext;
 import team5.prototype.tenant.TenantRepository;
 import team5.prototype.user.User;
 import team5.prototype.user.UserRepository;
@@ -26,8 +27,12 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     public Role createRole(CreateRoleRequestDto requestDto) {
+        Long tenantId = currentTenantId();
+        if (requestDto.getTenantId() != null && !tenantId.equals(requestDto.getTenantId())) {
+            throw new RuntimeException("Tenant mismatch");
+        }
         // Lade den Tenant anhand der ID aus dem DTO
-        Tenant tenant = tenantRepository.findById(requestDto.getTenantId())
+        Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new RuntimeException("Tenant nicht gefunden"));
 
         Role newRole = new Role();
@@ -38,10 +43,20 @@ public class RoleServiceImpl implements RoleService {
         return roleRepository.save(newRole);
     }
 
+    @Override
+    public List<Role> getAllRoles() {
+        return roleRepository.findAllByTenantId(currentTenantId());
+    }
+
+    @Override
+    public Optional<Role> getRoleById(Long roleId) {
+        return roleRepository.findByIdAndTenantId(roleId, currentTenantId());
+    }
+
     @Transactional(readOnly = true)
     @Override
     public List<RoleDto> getAllRolesAsDto() {
-        return roleRepository.findAll().stream()
+        return roleRepository.findAllByTenantId(currentTenantId()).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
@@ -49,7 +64,7 @@ public class RoleServiceImpl implements RoleService {
     @Transactional(readOnly = true)
     @Override
     public RoleDto getRoleByIdAsDto(Long id) {
-        return roleRepository.findById(id)
+        return roleRepository.findByIdAndTenantId(id, currentTenantId())
                 .map(this::convertToDto)
                 .orElse(null);
     }
@@ -65,7 +80,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     public Role updateRole(Long roleId, Role roleDetails) {
-        return roleRepository.findById(roleId)
+        return roleRepository.findByIdAndTenantId(roleId, currentTenantId())
                 .map(existingRole -> {
                     existingRole.setName(roleDetails.getName());
                     existingRole.setDescription(roleDetails.getDescription());
@@ -76,21 +91,32 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     public void deleteRole(Long roleId) {
-        roleRepository.deleteById(roleId);
+        Role existing = roleRepository.findByIdAndTenantId(roleId, currentTenantId())
+                .orElseThrow(() -> new RuntimeException("Rolle mit ID " + roleId + " nicht gefunden!"));
+        roleRepository.deleteById(existing.getId());
     }
 
     @Override
     public void assignRoleToUser(Long userId, Long roleId) {
+        Long tenantId = currentTenantId();
         // Lade den User und die Rolle aus der Datenbank
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdAndTenantId(userId, tenantId)
                 .orElseThrow(() -> new RuntimeException("User mit ID " + userId + " nicht gefunden!"));
 
-        Role role = roleRepository.findById(roleId)
+        Role role = roleRepository.findByIdAndTenantId(roleId, tenantId)
                 .orElseThrow(() -> new RuntimeException("Rolle mit ID " + roleId + " nicht gefunden!"));
 
         // Führe die Zuweisung durch (in der User-Entity)
         user.getRoles().add(role); // Annahme: User hat eine Set<Role> roles
 
         userRepository.save(user);
+    }
+
+    private Long currentTenantId() {
+        Long tenantId = TenantContext.getTenantId();
+        if (tenantId == null) {
+            throw new RuntimeException("Kein Tenant-Kontext vorhanden");
+        }
+        return tenantId;
     }
 }

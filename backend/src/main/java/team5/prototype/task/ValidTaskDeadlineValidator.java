@@ -3,6 +3,7 @@ package team5.prototype.task;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import team5.prototype.tenant.TenantContext;
 import team5.prototype.workflow.definition.WorkflowDefinitionRepository;
 import team5.prototype.workflow.step.WorkflowStep;
 
@@ -19,7 +20,12 @@ public class ValidTaskDeadlineValidator implements ConstraintValidator<ValidTask
             return true; // Let other validators handle null checks
         }
 
-        return workflowDefinitionRepository.findById(taskDto.getWorkflowDefinitionId())
+        Long tenantId = TenantContext.getTenantId();
+        if (tenantId == null) {
+            return false;
+        }
+
+        return workflowDefinitionRepository.findByIdAndTenantId(taskDto.getWorkflowDefinitionId(), tenantId)
                 .map(definition -> {
                     // Calculate total duration from all workflow steps
                     long totalDurationHours = definition.getSteps().stream()

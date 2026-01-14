@@ -15,6 +15,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import team5.prototype.tenant.TenantContextFilter;
 
 import java.util.Arrays;
 
@@ -22,9 +23,11 @@ import java.util.Arrays;
 @EnableWebSecurity
 public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
+    private final TenantContextFilter tenantContextFilter;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter, TenantContextFilter tenantContextFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
+        this.tenantContextFilter = tenantContextFilter;
     }
 
     @Bean
@@ -84,7 +87,8 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(tenantContextFilter, JwtAuthFilter.class);
 
         return http.build();
     }

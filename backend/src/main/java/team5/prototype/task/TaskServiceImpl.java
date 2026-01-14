@@ -15,6 +15,7 @@ import team5.prototype.user.UserRepository;
 import team5.prototype.workflow.definition.WorkflowDefinition;
 import team5.prototype.workflow.definition.WorkflowDefinitionRepository;
 import team5.prototype.workflow.step.WorkflowStep;
+import team5.prototype.tenant.TenantContext;
 
 
 import java.time.LocalDate;
@@ -53,8 +54,8 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
-    public TaskDto createTaskFromDefinition(TaskDto request) {
-        WorkflowDefinition definition = definitionRepository.findById(request.getWorkflowDefinitionId())
+    public Task createTaskFromDefinition(TaskDto request) {
+        WorkflowDefinition definition = definitionRepository.findByIdAndTenantId(request.getWorkflowDefinitionId(), currentTenantId())
                 .orElseThrow(() -> new EntityNotFoundException(
                         "WorkflowDefinition %d nicht gefunden".formatted(request.getWorkflowDefinitionId())));
 
@@ -106,7 +107,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional
     public void completeStep(Long taskId, Long stepId, Long userId) {
-        Task task = taskRepository.findById(taskId)
+        Task task = taskRepository.findByIdAndTenantId(taskId, currentTenantId())
                 .orElseThrow(() -> new EntityNotFoundException("Task %d nicht gefunden".formatted(taskId)));
 
         TaskStep step = task.getTaskSteps()
@@ -162,7 +163,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional(readOnly = true)
     public TaskProgress getTaskProgress(Long taskId) {
-        Task task = taskRepository.findById(taskId)
+        Task task = taskRepository.findByIdAndTenantId(taskId, currentTenantId())
                 .orElseThrow(() -> new EntityNotFoundException("Task %d nicht gefunden".formatted(taskId)));
 
         int totalSteps = task.getTaskSteps().size();
@@ -183,7 +184,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional(readOnly = true)
     public TaskDetailsDto getTaskDetails(Long taskId) {
-        Task task = taskRepository.findById(taskId)
+        Task task = taskRepository.findByIdAndTenantId(taskId, currentTenantId())
                 .orElseThrow(() -> new EntityNotFoundException("Task %d nicht gefunden".formatted(taskId)));
         int totalSteps = task.getTaskSteps().size();
         int completedSteps = (int) task.getTaskSteps().stream()
@@ -201,7 +202,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional(readOnly = true)
     public ManagerDashboardDto getManagerDashboard() {
-        List<Task> tasks = taskRepository.findAll();
+        List<Task> tasks = taskRepository.findAllByTenantId(currentTenantId());
         LocalDate today = LocalDate.now();
         long openTasks = tasks.stream()
                 .filter(task -> task.getStatus() != TaskStatus.COMPLETED)
@@ -223,7 +224,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional(readOnly = true)
     public List<TaskDto> getAllTasksAsDto() {
-        List<Task> tasks = taskRepository.findAll();
+        List<Task> tasks = taskRepository.findAllByTenantId(currentTenantId());
         return tasks.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
@@ -232,8 +233,20 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional(readOnly = true)
     public Optional<TaskDto> getTaskByIdAsDto(Long taskId) {
-        return taskRepository.findById(taskId)
+        return taskRepository.findByIdAndTenantId(taskId, currentTenantId())
                 .map(this::convertToDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Task> getAllTasks() {
+        return taskRepository.findAllByTenantId(currentTenantId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Task> getTaskById(Long taskId) {
+        return taskRepository.findByIdAndTenantId(taskId, currentTenantId());
     }
 
     private TaskDto convertToDto(Task task) {
@@ -336,7 +349,7 @@ public class TaskServiceImpl implements TaskService {
         Map<User, List<TaskStep>> userTaskMap = candidates.stream()
                 .collect(Collectors.toMap(
                         user -> user,
-                        user -> taskStepRepository.findActiveTaskStepsByUser(user.getId())
+                        user -> taskStepRepository.findActiveTaskStepsByUser(user.getId(), currentTenantId())
                 ));
 
         Optional<User> availableUser = userTaskMap.entrySet().stream()
@@ -376,7 +389,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     private User findUser(Long userId) {
-        return userRepository.findById(userId)
+        return userRepository.findByIdAndTenantId(userId, currentTenantId())
                 .orElseThrow(() -> new EntityNotFoundException("User %d nicht gefunden".formatted(userId)));
     }
 
@@ -384,6 +397,17 @@ public class TaskServiceImpl implements TaskService {
         return LocalDateTime.now();
     }
 
+    private Long currentTenantId() {
+        Long tenantId = TenantContext.getTenantId();
+        if (tenantId == null) {
+            throw new EntityNotFoundException("Kein Tenant-Kontext vorhanden");
+        }
+        return tenantId;
+    }
+
+    // ===================================================================
+    // KORREKTUR: Diese Methode wurde angepasst, um den Bug zu beheben.
+    // ===================================================================
     private Priority resolveTaskPriority(Task task) {
         // Finde den ersten, noch nicht abgeschlossenen Arbeitsschritt
         Optional<TaskStep> nextStepOpt = task.getTaskSteps().stream()

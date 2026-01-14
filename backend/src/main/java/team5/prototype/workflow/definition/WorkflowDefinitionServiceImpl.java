@@ -5,6 +5,7 @@ import team5.prototype.role.RoleDto;
 import team5.prototype.tenant.TenantDto;
 import team5.prototype.role.Role;
 import team5.prototype.tenant.Tenant;
+import team5.prototype.tenant.TenantContext;
 import team5.prototype.workflow.step.WorkflowStep;
 import team5.prototype.workflow.step.WorkflowStepDto;
 
@@ -22,6 +23,12 @@ public class WorkflowDefinitionServiceImpl implements WorkflowDefinitionService 
 
     @Override
     public WorkflowDefinition createWorkflowDefinition(WorkflowDefinition definition) {
+        Long tenantId = currentTenantId();
+        if (definition.getTenant() == null || definition.getTenant().getId() == null
+                || !tenantId.equals(definition.getTenant().getId())) {
+            throw new RuntimeException("Tenant mismatch");
+        }
+        // WICHTIG: Setze die Rück-Referenz für jeden Schritt, bevor du speicherst.
         if (definition.getSteps() != null) {
             for (WorkflowStep step : definition.getSteps()) {
                 step.setWorkflowDefinition(definition);
@@ -31,12 +38,12 @@ public class WorkflowDefinitionServiceImpl implements WorkflowDefinitionService 
     }
 
     public WorkflowDefinitionDto getWorkflowDefinitionByIdAsDto(Long id) {
-        WorkflowDefinition definition = definitionRepository.findById(id).orElse(null);
+        WorkflowDefinition definition = definitionRepository.findByIdAndTenantId(id, currentTenantId()).orElse(null);
         return convertToDto(definition);
     }
 
     public List<WorkflowDefinitionDto> getAllWorkflowDefinitionsAsDto() {
-        List<WorkflowDefinition> definitions = definitionRepository.findAll();
+        List<WorkflowDefinition> definitions = definitionRepository.findAllByTenantId(currentTenantId());
         return definitions.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
@@ -90,5 +97,13 @@ public class WorkflowDefinitionServiceImpl implements WorkflowDefinitionService 
                 .active(tenant.getActive())
                 .createdAt(tenant.getCreatedAt())
                 .build();
+    }
+
+    private Long currentTenantId() {
+        Long tenantId = TenantContext.getTenantId();
+        if (tenantId == null) {
+            throw new RuntimeException("Kein Tenant-Kontext vorhanden");
+        }
+        return tenantId;
     }
 }
