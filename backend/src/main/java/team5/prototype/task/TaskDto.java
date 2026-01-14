@@ -3,6 +3,7 @@ package team5.prototype.task;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.Setter;
+import team5.prototype.taskstep.Priority;
 import team5.prototype.taskstep.TaskStepDto;
 
 import java.time.LocalDateTime;
@@ -22,6 +23,7 @@ public class TaskDto {
     private LocalDateTime deadline;
     private String status;
     private List<TaskStepDto> steps;
+    private Priority priority;
 
     // --- Felder für ANFRAGEN (POST zum Erstellen) ---
     private Long workflowDefinitionId;

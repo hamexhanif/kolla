@@ -9,6 +9,6 @@ public class TaskStepDto {
     private Long id;
     private String name;
     private String status;
-    private String assignedUsername; // Besserer Name als nur 'assignedUser'
+    private String assignedUsername;
     private String priority;
 }

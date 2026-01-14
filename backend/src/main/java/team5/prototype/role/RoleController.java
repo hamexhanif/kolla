@@ -18,7 +18,7 @@ public class RoleController {
     }
 
     @PostMapping
-    public RoleDto createRole(@RequestBody CreateRoleRequestDto requestDto) { // PARAMETER GEÄNDERT
+    public RoleDto createRole(@RequestBody CreateRoleRequestDto requestDto) {
         Role createdRole = roleService.createRole(requestDto);
         return convertToDto(createdRole);
     }

@@ -3,8 +3,7 @@ package team5.prototype.security;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,18 +17,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class AuthServiceImpl implements AuthService {
 
-    private static final Logger logger = LoggerFactory.getLogger(AuthServiceImpl.class);
     private final UserRepository userRepository;
-
-    // KORREKTUR: Wir verwenden den allgemeinen Interface-Typ, nicht die spezifische Implementierung.
     private final PasswordEncoder passwordEncoder;
-
     private final SecretKey jwtSecretKey;
 
-    // KORREKTUR: Wir injizieren den zentralen PasswordEncoder von Spring.
     public AuthServiceImpl(UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
                            @Value("${jwt.secret}") String jwtSecret) {
@@ -40,21 +35,21 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthDto login(String email, String password) {
-        // 1. Finde den Benutzer in der Datenbank anhand seiner E-MAIL.
+        // Finde den Benutzer in der Datenbank anhand seiner E-Mail
         return userRepository.findByEmail(email)
                 .map(user -> {
-                    // 2. Benutzer gefunden. Überprüfe das Passwort mit dem korrekten Encoder.
+                    // Benutzer gefunden. Überprüfe das Passwort mit dem korrekten Encoder.
                     if (passwordEncoder.matches(password, user.getPasswordHash())) {
-                        logger.info("Login erfolgreich für: {}", email);
+                        log.info("Login erfolgreich für: {}", email);
                         String token = createToken(user);
                         return new AuthDto(token, user.getId());
                     } else {
-                        logger.warn("Login-Fehler: Falsches Passwort für: {}", email);
+                        log.warn("Login-Fehler: Falsches Passwort für: {}", email);
                         return null;
                     }
                 })
                 .orElseGet(() -> {
-                    logger.warn("Login-Fehler: Benutzer nicht gefunden: {}", email);
+                    log.warn("Login-Fehler: Benutzer nicht gefunden: {}", email);
                     return null;
                 });
     }

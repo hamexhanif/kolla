@@ -1,7 +1,6 @@
 package team5.prototype.init;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -23,11 +22,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+@Slf4j
 @Component
 public class DataSeeder implements CommandLineRunner {
-
-    private static final Logger logger = LoggerFactory.getLogger(DataSeeder.class);
-
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final WorkflowDefinitionRepository workflowDefinitionRepository;
@@ -49,23 +46,23 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         if (tenantRepository.count() == 0) {
-            logger.info("Datenbank ist leer. Erstelle Dummy-Daten...");
+            log.info("Datenbank ist leer. Erstelle Dummy-Daten...");
             createDummyData();
         } else {
-            logger.info("Datenbank enthält bereits Daten. Überspringe das Seeding.");
+            log.info("Datenbank enthält bereits Daten. Überspringe das Seeding.");
         }
     }
 
     private void createDummyData() {
-        // == Schritt 0: Den Mandanten (Tenant) erstellen ==
+        // Den Mandanten (Tenant) erstellen ==
         Tenant defaultTenant = Tenant.builder().name("Default Tenant").subdomain("default").active(true).build();
         tenantRepository.save(defaultTenant);
 
-        // == Schritt 1: Einen Admin-Benutzer erstellen ==
+        // Einen Admin-Benutzer erstellen ==
         User adminUser = User.builder().username("admin").email("admin@kolla.com").passwordHash(passwordEncoder.encode("adminpassword")).firstName("Admin").lastName("User").tenant(defaultTenant).active(true).build();
         userRepository.save(adminUser);
 
-        // == Schritt 2: Rollen erstellen ==
+        // == Rollen erstellen ==
         Role managerRole = Role.builder().name("WORKFLOW_MANAGER").description("...").tenant(defaultTenant).createdBy(adminUser).build();
         Role developerRole = Role.builder().name("DEVELOPER").description("...").tenant(defaultTenant).createdBy(adminUser).build();
         Role testerRole = Role.builder().name("TESTER").description("...").tenant(defaultTenant).createdBy(adminUser).build();
@@ -73,12 +70,12 @@ public class DataSeeder implements CommandLineRunner {
         adminUser.setRoles(Set.of(managerRole));
         userRepository.save(adminUser);
 
-        // == Schritt 3: Weitere Benutzer (Akteure) erstellen ==
+        // == Weitere Benutzer (Akteure) erstellen ==
         User developerUser = User.builder().username("developer").email("dev@kolla.com").passwordHash(passwordEncoder.encode("devpassword")).firstName("Dev").lastName("Eloper").tenant(defaultTenant).roles(Set.of(developerRole)).active(true).build();
         User testerUser = User.builder().username("tester").email("tester@kolla.com").passwordHash(passwordEncoder.encode("testpassword")).firstName("Test").lastName("Er").tenant(defaultTenant).roles(Set.of(testerRole)).active(true).build();
         userRepository.saveAll(List.of(developerUser, testerUser));
 
-        // == Schritt 4: Eine Workflow-Vorlage (WorkflowDefinition) erstellen ==
+        // == Eine Workflow-Vorlage (WorkflowDefinition) erstellen ==
         WorkflowDefinition newFeatureWorkflow = WorkflowDefinition.builder().name("Neues Feature entwickeln").description("...").tenant(defaultTenant).createdBy(adminUser).build();
         WorkflowStep step1 = WorkflowStep.builder().name("Analyse und Design").durationHours(8).sequenceOrder(0).requiredRole(developerRole).workflowDefinition(newFeatureWorkflow).build();
         WorkflowStep step2 = WorkflowStep.builder().name("Implementierung").durationHours(24).sequenceOrder(1).requiredRole(developerRole).workflowDefinition(newFeatureWorkflow).build();
@@ -86,8 +83,8 @@ public class DataSeeder implements CommandLineRunner {
         newFeatureWorkflow.setSteps(Arrays.asList(step1, step2, step3));
         workflowDefinitionRepository.save(newFeatureWorkflow);
 
-        // == Schritt 5: Einen echten Task aus der Vorlage erstellen ==
-        logger.info(">>>> DATENSEEDER: Erstelle jetzt einen echten Test-Task... <<<<");
+        // == Einen echten Task aus der Vorlage erstellen ==
+        log.info(">>>> DATENSEEDER: Erstelle jetzt einen echten Test-Task... <<<<");
         TaskDto taskRequestDto = new TaskDto();
         taskRequestDto.setWorkflowDefinitionId(newFeatureWorkflow.getId());
         taskRequestDto.setTitle("Erstes Feature implementieren");
@@ -98,20 +95,20 @@ public class DataSeeder implements CommandLineRunner {
         try {
             TenantContext.setTenantId(defaultTenant.getId());
             taskService.createTaskFromDefinition(taskRequestDto);
-            logger.info(">>>> DATENSEEDER: Test-Task erfolgreich erstellt! <<<<");
+            log.info(">>>> DATENSEEDER: Test-Task erfolgreich erstellt! <<<<");
         } catch (Exception e) {
             logger.error(">>>> FEHLER BEIM ERSTELLEN DES TEST-TASKS: {}", e.getMessage(), e);
         } finally {
             TenantContext.clear();
         }
 
-        logger.info("-----------------------------------------");
-        logger.info("Dummy-Daten erfolgreich erstellt!");
-        logger.info("Tenants: {}", tenantRepository.count());
-        logger.info("Benutzer: {}", userRepository.count());
-        logger.info("Rollen: {}", roleRepository.count());
-        logger.info("Workflow-Vorlagen: {}", workflowDefinitionRepository.count());
-        logger.info("-----------------------------------------");
+        log.info("-----------------------------------------");
+        log.info("Dummy-Daten erfolgreich erstellt!");
+        log.info("Tenants: {}", tenantRepository.count());
+        log.info("Benutzer: {}", userRepository.count());
+        log.info("Rollen: {}", roleRepository.count());
+        log.info("Workflow-Vorlagen: {}", workflowDefinitionRepository.count());
+        log.info("-----------------------------------------");
     }
 
 }

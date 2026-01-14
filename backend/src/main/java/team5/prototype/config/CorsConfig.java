@@ -25,7 +25,7 @@ public class CorsConfig {
                         .allowCredentials(true)
                         .maxAge(3600);
 
-                // Also allow CORS for WebSocket endpoints
+                // CORS für WebSocket-Endpunkte
                 registry.addMapping("/ws/**")
                         .allowedOrigins(
                                 "https://bailas2310.github.io",

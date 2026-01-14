@@ -13,7 +13,7 @@ public interface TaskService {
      * @param request Ein DTO, das alle notwendigen Informationen fuer die Erstellung enthaelt.
      * @return Die neu erstellte und in der Datenbank gespeicherte Task-Entitaet.
      */
-    Task createTaskFromDefinition(TaskDto request);
+    TaskDto createTaskFromDefinition(TaskDto request);
 
     /**
      * Schliesst einen Arbeitsschritt ab und bewegt den Workflow vorwaerts.
@@ -30,19 +30,6 @@ public interface TaskService {
      * @return Ein DTO, das die Fortschrittsinformationen zusammenfasst.
      */
     TaskProgress getTaskProgress(Long taskId);
-
-    /**
-     * Ruft alle Tasks ab.
-     * @return Eine Liste aller Task-Entitaeten.
-     */
-    List<Task> getAllTasks();
-
-    /**
-     * Ruft eine einzelne Task anhand ihrer ID ab.
-     * @param taskId Die ID der zu suchenden Task.
-     * @return Ein Optional, das die Task-Entitaet enthaelt, falls gefunden.
-     */
-    Optional<Task> getTaskById(Long taskId);
 
     List<TaskDto> getAllTasksAsDto();
     Optional<TaskDto> getTaskByIdAsDto(Long taskId);

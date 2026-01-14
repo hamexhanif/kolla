@@ -91,7 +91,7 @@ public class TaskStepServiceImpl implements TaskStepService {
         return taskStepRepository.findAllByAssignedUserIdAndTask_Tenant_Id(userId, currentTenantId());
     }
 
-    // --- Private Hilfsmethoden ---
+    // Private Hilfsmethoden
 
     private TaskStep findTaskStep(Long id) {
         return taskStepRepository.findByIdAndTask_Tenant_Id(id, currentTenantId())

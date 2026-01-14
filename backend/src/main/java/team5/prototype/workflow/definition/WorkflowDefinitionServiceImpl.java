@@ -81,7 +81,7 @@ public class WorkflowDefinitionServiceImpl implements WorkflowDefinitionService 
 
     private RoleDto convertRoleToDto(Role role) {
         if (role == null) return null;
-        return RoleDto.builder() // Jetzt funktioniert der Builder
+        return RoleDto.builder()
                 .id(role.getId())
                 .name(role.getName())
                 .description(role.getDescription())

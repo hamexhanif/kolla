@@ -9,19 +9,8 @@ import java.util.List;
 @Setter
 public class UserDto {
 
-    /**
-     * Die eindeutige ID des Benutzers.
-     */
     private Long id;
-
-    /**
-     * Der Benutzername.
-     */
     private String username;
-
-    /**
-     * Die E-Mail-Adresse des Benutzers.
-     */
     private String email;
     private String firstName;
     private String lastName;

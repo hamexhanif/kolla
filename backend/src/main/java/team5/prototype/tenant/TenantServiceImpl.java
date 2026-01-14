@@ -1,17 +1,20 @@
 package team5.prototype.tenant;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
+
 @Service
 public class TenantServiceImpl implements TenantService {
     private final TenantRepository tenantRepository;
     public TenantServiceImpl(TenantRepository tenantRepository) { this.tenantRepository = tenantRepository; }
+
     @Override
     public Tenant createTenant(TenantDto requestDto) {
         Tenant newTenant = Tenant.builder().name(requestDto.getName()).subdomain(requestDto.getSubdomain()).active(true).build();
         return tenantRepository.save(newTenant);
     }
+
     @Override
     public List<Tenant> getAllTenants() {
         Long tenantId = currentTenantId();
