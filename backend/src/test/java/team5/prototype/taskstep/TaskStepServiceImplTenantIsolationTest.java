@@ -20,10 +20,6 @@ class TaskStepServiceImplTenantIsolationTest {
 
     @Mock
     private TaskStepRepository taskStepRepository;
-    @Mock
-    private TaskService taskService;
-    @Mock
-    private NotificationService notificationService;
 
     @InjectMocks
     private TaskStepServiceImpl taskStepService;

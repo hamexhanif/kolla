@@ -21,13 +21,6 @@ public class TenantServiceImpl implements TenantService {
         return tenantRepository.findById(tenantId).map(List::of).orElseGet(List::of);
     }
     @Override
-    public Optional<Tenant> getTenantById(Long id) {
-        if (!currentTenantId().equals(id)) {
-            return Optional.empty();
-        }
-        return tenantRepository.findById(id);
-    }
-    @Override
     public void deleteTenant(Long id) {
         if (!currentTenantId().equals(id)) { throw new RuntimeException("..."); }
         if (!tenantRepository.existsById(id)) { throw new RuntimeException("..."); }

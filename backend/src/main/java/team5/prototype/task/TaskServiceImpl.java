@@ -54,7 +54,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
-    public Task createTaskFromDefinition(TaskDto request) {
+    public TaskDto createTaskFromDefinition(TaskDto request) {
         WorkflowDefinition definition = definitionRepository.findByIdAndTenantId(request.getWorkflowDefinitionId(), currentTenantId())
                 .orElseThrow(() -> new EntityNotFoundException(
                         "WorkflowDefinition %d nicht gefunden".formatted(request.getWorkflowDefinitionId())));
@@ -235,18 +235,6 @@ public class TaskServiceImpl implements TaskService {
     public Optional<TaskDto> getTaskByIdAsDto(Long taskId) {
         return taskRepository.findByIdAndTenantId(taskId, currentTenantId())
                 .map(this::convertToDto);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Task> getAllTasks() {
-        return taskRepository.findAllByTenantId(currentTenantId());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<Task> getTaskById(Long taskId) {
-        return taskRepository.findByIdAndTenantId(taskId, currentTenantId());
     }
 
     private TaskDto convertToDto(Task task) {

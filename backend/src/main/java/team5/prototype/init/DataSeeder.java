@@ -58,9 +58,17 @@ public class DataSeeder implements CommandLineRunner {
         Tenant defaultTenant = Tenant.builder().name("Default Tenant").subdomain("default").active(true).build();
         tenantRepository.save(defaultTenant);
 
+        // Zweite Mandanten erstellen
+        Tenant tenant2 = Tenant.builder().name("Tenant2").subdomain("tenant2").active(true).build();
+        tenantRepository.save(tenant2);
+
         // Einen Admin-Benutzer erstellen ==
         User adminUser = User.builder().username("admin").email("admin@kolla.com").passwordHash(passwordEncoder.encode("adminpassword")).firstName("Admin").lastName("User").tenant(defaultTenant).active(true).build();
         userRepository.save(adminUser);
+
+        // Admin von zweite Mandanten
+        User admin2 = User.builder().username("admin2").email("admin2@kolla.com").passwordHash(passwordEncoder.encode("adminpassword")).firstName("Admin").lastName("Mandant2").tenant(tenant2).active(true).build();
+        userRepository.save(admin2);
 
         // == Rollen erstellen ==
         Role managerRole = Role.builder().name("WORKFLOW_MANAGER").description("...").tenant(defaultTenant).createdBy(adminUser).build();
@@ -70,10 +78,23 @@ public class DataSeeder implements CommandLineRunner {
         adminUser.setRoles(Set.of(managerRole));
         userRepository.save(adminUser);
 
+        // Rolle von zweite Mandanten
+        Role managerRole2 = Role.builder().name("WORKFLOW_MANAGER").description("...").tenant(tenant2).createdBy(admin2).build();
+        Role kochRole = Role.builder().name("KOCH").description("...").tenant(tenant2).createdBy(admin2).build();
+        Role lehrerRole = Role.builder().name("LEHRER").description("...").tenant(tenant2).createdBy(admin2).build();
+        roleRepository.saveAll(List.of(managerRole2, kochRole, lehrerRole));
+        admin2.setRoles(Set.of(managerRole2));
+        userRepository.save(admin2);
+
         // == Weitere Benutzer (Akteure) erstellen ==
         User developerUser = User.builder().username("developer").email("dev@kolla.com").passwordHash(passwordEncoder.encode("devpassword")).firstName("Dev").lastName("Eloper").tenant(defaultTenant).roles(Set.of(developerRole)).active(true).build();
         User testerUser = User.builder().username("tester").email("tester@kolla.com").passwordHash(passwordEncoder.encode("testpassword")).firstName("Test").lastName("Er").tenant(defaultTenant).roles(Set.of(testerRole)).active(true).build();
         userRepository.saveAll(List.of(developerUser, testerUser));
+
+        // Benutzer von zweite Mandanten
+        User kochUser = User.builder().username("koch").email("koch@kolla.com").passwordHash(passwordEncoder.encode("password")).firstName("Dev").lastName("Eloper").tenant(tenant2).roles(Set.of(kochRole)).active(true).build();
+        User lehrerUser = User.builder().username("lehrer").email("lehrer@kolla.com").passwordHash(passwordEncoder.encode("password")).firstName("Test").lastName("Er").tenant(tenant2).roles(Set.of(lehrerRole)).active(true).build();
+        userRepository.saveAll(List.of(kochUser, lehrerUser));
 
         // == Eine Workflow-Vorlage (WorkflowDefinition) erstellen ==
         WorkflowDefinition newFeatureWorkflow = WorkflowDefinition.builder().name("Neues Feature entwickeln").description("...").tenant(defaultTenant).createdBy(adminUser).build();
@@ -97,7 +118,7 @@ public class DataSeeder implements CommandLineRunner {
             taskService.createTaskFromDefinition(taskRequestDto);
             log.info(">>>> DATENSEEDER: Test-Task erfolgreich erstellt! <<<<");
         } catch (Exception e) {
-            logger.error(">>>> FEHLER BEIM ERSTELLEN DES TEST-TASKS: {}", e.getMessage(), e);
+            log.error(">>>> FEHLER BEIM ERSTELLEN DES TEST-TASKS: {}", e.getMessage(), e);
         } finally {
             TenantContext.clear();
         }
