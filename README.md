@@ -4,7 +4,7 @@ Kolla ist ein prototypisches, kollaboratives Aufgabenmanagementsystem, das im Ra
 
 ## Kerntechnologien
 
-- **Backend:** Spring Boot 3 / Java 21
+- **Backend:** Spring Boot 4 / Java 21
 - **Sicherheit:** Spring Security mit zustandsloser JWT-Authentifizierung
 - **Datenhaltung:** Spring Data JPA mit H2 In-Memory-Datenbank
 - **Echtzeit-Kommunikation:** Spring WebSockets (mit STOMP)
